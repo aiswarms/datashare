@@ -55,6 +55,8 @@ See [`API_CONTRACT.md`](API_CONTRACT.md) for full request/response schemas.
 
 ## Data Model
 
+![Application Schema](documentation/datashare_app_schema.png)
+
 Three entities: **User**, **File**, **Tag**.
 
 - A file belongs to 0 or 1 user (0 = anonymous upload)
