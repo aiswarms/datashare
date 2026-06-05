@@ -1,0 +1,615 @@
+openapi: 3.1.0
+
+info:
+  title: DataShare API
+  version: 1.0.0
+  description: >
+    File-sharing API — upload files and share them via temporary,
+    password-protected download links.
+
+servers:
+  - url: /api/v1
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Human-readable description
+
+    UserCreated:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-06-03T10:00:00Z"
+
+    AuthToken:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJSUzI1NiJ9...
+        expires_in:
+          type: integer
+          example: 3600
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 7
+        name:
+          type: string
+          example: invoice
+
+    FileResource:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        token:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        original_name:
+          type: string
+          example: report.pdf
+        mime_type:
+          type: string
+          example: application/pdf
+        size:
+          type: integer
+          example: 204800
+        expires_at:
+          type: string
+          format: date-time
+          example: "2024-06-10T10:00:00Z"
+        uploaded_at:
+          type: string
+          format: date-time
+          example: "2024-06-03T10:00:00Z"
+        password_protected:
+          type: boolean
+          example: false
+        download_url:
+          type: string
+          example: /api/v1/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["invoice", "2024"]
+
+    FileResourceWithExpiry:
+      allOf:
+        - $ref: '#/components/schemas/FileResource'
+        - type: object
+          properties:
+            is_expired:
+              type: boolean
+              example: false
+
+    AnonymousFileResource:
+      type: object
+      properties:
+        token:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        original_name:
+          type: string
+          example: photo.jpg
+        mime_type:
+          type: string
+          example: image/jpeg
+        size:
+          type: integer
+          example: 102400
+        expires_at:
+          type: string
+          format: date-time
+          example: "2024-06-10T10:00:00Z"
+        uploaded_at:
+          type: string
+          format: date-time
+          example: "2024-06-03T10:00:00Z"
+        password_protected:
+          type: boolean
+          example: true
+        download_url:
+          type: string
+          example: /api/v1/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download
+
+    FileMetadata:
+      type: object
+      properties:
+        original_name:
+          type: string
+          example: report.pdf
+        mime_type:
+          type: string
+          example: application/pdf
+        size:
+          type: integer
+          example: 204800
+        expires_at:
+          type: string
+          format: date-time
+          example: "2024-06-10T10:00:00Z"
+        password_protected:
+          type: boolean
+          example: false
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: UNAUTHORIZED
+            message: Missing or invalid JWT
+    Forbidden:
+      description: Authenticated but not the resource owner
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: FORBIDDEN
+            message: File belongs to another user
+    FileNotFound:
+      description: Resource not found or expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: FILE_NOT_FOUND
+            message: Token unknown or file expired
+
+paths:
+
+  /auth/register:
+    post:
+      summary: Create a new user account
+      operationId: register
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: mysecretpassword
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreated'
+        "400":
+          description: Invalid email or password too short
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: VALIDATION_ERROR
+                message: Invalid email or password too short
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: EMAIL_TAKEN
+                message: Email already registered
+
+  /auth/login:
+    post:
+      summary: Authenticate and receive a JWT token
+      operationId: login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  example: mysecretpassword
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        "400":
+          description: Missing or malformed fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: VALIDATION_ERROR
+                message: Missing or malformed fields
+        "401":
+          description: Wrong email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: INVALID_CREDENTIALS
+                message: Wrong email or password
+
+  /files:
+    get:
+      summary: Get the authenticated user's upload history
+      operationId: listFiles
+      tags: [Files]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Upload history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FileResourceWithExpiry'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Upload a file as an authenticated user
+      operationId: uploadFile
+      tags: [Files]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                expires_in_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 7
+                  default: 7
+                password:
+                  type: string
+                  minLength: 6
+                tags[]:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 30
+      responses:
+        "201":
+          description: File uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResource'
+        "400":
+          description: Invalid field value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: VALIDATION_ERROR
+                message: Invalid field value
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "413":
+          description: File exceeds 1 GB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: FILE_TOO_LARGE
+                message: File exceeds 1 GB
+        "422":
+          description: Forbidden file type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: FORBIDDEN_FILE_TYPE
+                message: File extension not allowed
+
+  /files/anonymous:
+    post:
+      summary: Upload a file without an account
+      operationId: uploadFileAnonymous
+      tags: [Files]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                expires_in_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 7
+                  default: 7
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        "201":
+          description: File uploaded anonymously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnonymousFileResource'
+        "400":
+          description: Invalid field value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: VALIDATION_ERROR
+                message: Invalid field value
+        "413":
+          description: File exceeds 1 GB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: FILE_TOO_LARGE
+                message: File exceeds 1 GB
+        "422":
+          description: Forbidden file type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: FORBIDDEN_FILE_TYPE
+                message: File extension not allowed
+
+  /files/{token}:
+    get:
+      summary: Get file metadata
+      operationId: getFileMetadata
+      tags: [Files]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The file's public UUID
+      responses:
+        "200":
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMetadata'
+        "404":
+          $ref: '#/components/responses/FileNotFound'
+
+  /files/{token}/download:
+    get:
+      summary: Download a file
+      operationId: downloadFile
+      tags: [Files]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The file's public UUID
+        - name: password
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Required only if the file is password-protected
+      responses:
+        "200":
+          description: Binary file stream
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: 'attachment; filename="report.pdf"'
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Incorrect file password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: WRONG_PASSWORD
+                message: Incorrect file password
+        "404":
+          $ref: '#/components/responses/FileNotFound'
+
+  /files/{id}:
+    delete:
+      summary: Permanently delete a file
+      operationId: deleteFile
+      tags: [Files]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The file's internal integer ID
+      responses:
+        "204":
+          description: File deleted
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/FileNotFound'
+
+  /files/{id}/tags:
+    post:
+      summary: Add a tag to a file
+      operationId: addTag
+      tags: [Tags]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The file's internal ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 30
+                  example: invoice
+      responses:
+        "201":
+          description: Tag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        "400":
+          description: Name empty or exceeds 30 chars
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: VALIDATION_ERROR
+                message: Name empty or exceeds 30 chars
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/FileNotFound'
+        "409":
+          description: Tag name already exists on this file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: TAG_ALREADY_EXISTS
+                message: This tag name already exists on the file
+
+  /files/{id}/tags/{tagId}:
+    delete:
+      summary: Remove a tag from a file
+      operationId: deleteTag
+      tags: [Tags]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The file's internal ID
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The tag's internal ID
+      responses:
+        "204":
+          description: Tag removed
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/FileNotFound'
