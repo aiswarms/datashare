@@ -10,6 +10,19 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: datashare
+      MINIO_ROOT_PASSWORD: datashare
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
   api:
     build:
       context: ./api
@@ -20,6 +33,7 @@ services:
       DATABASE_URL: postgresql://datashare:datashare@db:5432/datashare
     depends_on:
       - db
+      - minio
 
   frontend:
     build:
@@ -44,3 +58,4 @@ services:
   
 volumes:
   db_data:
+  minio_data:
