@@ -21,7 +21,7 @@ export default function HomePage() {
           justifyContent="center"
           cursor="pointer"
           _hover={{ bg: 'gray.700' }}
-          onClick={() => navigate('/login')}
+          onClick={() => navigate(localStorage.getItem('token') ? '/upload' : '/login')}
           data-testid="upload-button"
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

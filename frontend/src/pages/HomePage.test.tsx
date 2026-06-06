@@ -8,7 +8,10 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-beforeEach(() => mockNavigate.mockClear())
+beforeEach(() => {
+  mockNavigate.mockClear()
+  localStorage.clear()
+})
 
 describe('HomePage', () => {
   it('shows upload prompt', () => {
@@ -16,9 +19,16 @@ describe('HomePage', () => {
     expect(screen.getByText('Tu veux partager un fichier ?')).toBeInTheDocument()
   })
 
-  it('clicking upload button navigates to /login', () => {
+  it('clicking upload button navigates to /login when not authenticated', () => {
     renderWithProviders(<HomePage />)
     fireEvent.click(screen.getByTestId('upload-button'))
     expect(mockNavigate).toHaveBeenCalledWith('/login')
+  })
+
+  it('clicking upload button navigates to /upload when authenticated', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<HomePage />)
+    fireEvent.click(screen.getByTestId('upload-button'))
+    expect(mockNavigate).toHaveBeenCalledWith('/upload')
   })
 })
