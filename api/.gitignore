@@ -8,3 +8,10 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+# JWT keys (generate with: php bin/console lexik:jwt:generate-keypair)
+/config/jwt/
+
+# Symfony Docker integration (remplacé par notre docker-compose.yml)
+/compose.yaml
+/compose.override.yaml
