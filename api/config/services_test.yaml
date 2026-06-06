@@ -1,0 +1,6 @@
+services:
+    App\Service\FileStorageService:
+        class: App\Tests\Stub\FileStorageServiceStub
+        autowire: false
+        autoconfigure: false
+        arguments: []
