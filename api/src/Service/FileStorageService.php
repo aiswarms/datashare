@@ -42,6 +42,16 @@ class FileStorageService
         ]);
     }
 
+    public function getStream(string $storagePath): \Psr\Http\Message\StreamInterface
+    {
+        $result = $this->client->getObject([
+            'Bucket' => $this->bucket,
+            'Key'    => $storagePath,
+        ]);
+
+        return $result['Body'];
+    }
+
     private function ensureBucketExists(): void
     {
         try {
