@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Box, Flex, Text, Button, HStack, VStack } from '@chakra-ui/react'
+import { useEffect, useRef, useState } from 'react'
+import { Box, Flex, Text, Button, HStack, VStack, Input } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
 import { getFiles, type FileRecord } from '../api/files'
 
@@ -267,70 +267,125 @@ export default function MySpacePage() {
 
 function FileRow({ file }: { file: FileRecord }) {
   const expiry = formatExpiry(file)
+  const [askPassword, setAskPassword] = useState(false)
+  const [password, setPassword] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function handleAccess() {
+    if (file.password_protected) {
+      setAskPassword(true)
+      setTimeout(() => inputRef.current?.focus(), 0)
+    } else {
+      window.open(file.download_url, '_blank')
+    }
+  }
+
+  function handlePasswordSubmit() {
+    const url = `${file.download_url}?password=${encodeURIComponent(password)}`
+    window.open(url, '_blank')
+    setAskPassword(false)
+    setPassword('')
+  }
 
   return (
-    <Flex
-      align="center"
-      px={4}
-      py={3}
+    <Box
       bg="white"
       borderRadius="md"
       border="1px solid"
       borderColor="gray.100"
-      gap={3}
       data-testid="file-row"
     >
-      <FileIcon />
+      <Flex align="center" px={4} py={3} gap={3}>
+        <FileIcon />
 
-      <Box flex="1" minW={0}>
-        <Text
-          fontSize="sm"
-          fontWeight="medium"
-          style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        >
-          {file.original_name}
-        </Text>
-        <Text fontSize="xs" color={file.is_expired ? CORAL : 'gray.500'}>
-          {expiry}
-        </Text>
-      </Box>
-
-      {file.password_protected && !file.is_expired && (
-        <Box flexShrink={0}>
-          <LockIcon />
+        <Box flex="1" minW={0}>
+          <Text
+            fontSize="sm"
+            fontWeight="medium"
+            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {file.original_name}
+          </Text>
+          <Text fontSize="xs" color={file.is_expired ? CORAL : 'gray.500'}>
+            {expiry}
+          </Text>
         </Box>
-      )}
 
-      {file.is_expired ? (
-        <Text fontSize="xs" color="gray.400" display={{ base: 'none', md: 'block' }}>
-          Ce fichier a expiré. Il n'est plus stocké chez nous.
-        </Text>
-      ) : (
-        <HStack gap={2} flexShrink={0}>
+        {file.password_protected && !file.is_expired && (
+          <Box flexShrink={0}>
+            <LockIcon />
+          </Box>
+        )}
+
+        {file.is_expired ? (
+          <Text fontSize="xs" color="gray.400" display={{ base: 'none', md: 'block' }}>
+            Ce fichier a expiré. Il n'est plus stocké chez nous.
+          </Text>
+        ) : (
+          <HStack gap={2} flexShrink={0}>
+            <Button
+              size="xs"
+              bg={CORAL}
+              color="white"
+              borderRadius="full"
+              _hover={{ bg: '#c25a4e' }}
+              data-testid="delete-button"
+            >
+              Supprimer
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              borderRadius="full"
+              borderColor="gray.300"
+              color="gray.700"
+              _hover={{ bg: 'gray.50' }}
+              onClick={handleAccess}
+              data-testid="access-button"
+            >
+              Accéder →
+            </Button>
+          </HStack>
+        )}
+      </Flex>
+
+      {askPassword && (
+        <HStack px={4} pb={3} gap={2}>
+          <Input
+            ref={inputRef}
+            type="password"
+            placeholder="Mot de passe du fichier"
+            size="sm"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handlePasswordSubmit()}
+            borderColor="gray.200"
+            data-testid="password-input"
+          />
           <Button
-            size="xs"
+            size="sm"
             bg={CORAL}
             color="white"
             borderRadius="full"
+            flexShrink={0}
             _hover={{ bg: '#c25a4e' }}
-            data-testid="delete-button"
+            onClick={handlePasswordSubmit}
+            data-testid="password-submit"
           >
-            Supprimer
+            Valider
           </Button>
           <Button
-            size="xs"
-            variant="outline"
-            borderRadius="full"
-            borderColor="gray.300"
-            color="gray.700"
-            _hover={{ bg: 'gray.50' }}
-            onClick={() => window.open(file.download_url, '_blank')}
-            data-testid="access-button"
+            size="sm"
+            variant="ghost"
+            color="gray.500"
+            flexShrink={0}
+            onClick={() => { setAskPassword(false); setPassword('') }}
+            data-testid="password-cancel"
           >
-            Accéder →
+            Annuler
           </Button>
         </HStack>
       )}
-    </Flex>
+    </Box>
   )
 }

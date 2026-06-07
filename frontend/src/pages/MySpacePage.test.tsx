@@ -158,6 +158,70 @@ describe('MySpacePage', () => {
     expect(screen.getByText('expired.pdf')).toBeInTheDocument()
   })
 
+  it('opens download URL directly for unprotected file', async () => {
+    localStorage.setItem('token', 'jwt')
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ password_protected: false })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('access-button'))
+
+    expect(openSpy).toHaveBeenCalledWith('/api/files/abc-123/download', '_blank')
+    expect(screen.queryByTestId('password-input')).not.toBeInTheDocument()
+    openSpy.mockRestore()
+  })
+
+  it('shows password input when Accéder is clicked on protected file', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ password_protected: true })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('access-button'))
+
+    expect(screen.getByTestId('password-input')).toBeInTheDocument()
+  })
+
+  it('appends password to URL on submit', async () => {
+    localStorage.setItem('token', 'jwt')
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ password_protected: true })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('access-button'))
+    fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'secret' } })
+    fireEvent.click(screen.getByTestId('password-submit'))
+
+    expect(openSpy).toHaveBeenCalledWith('/api/files/abc-123/download?password=secret', '_blank')
+    openSpy.mockRestore()
+  })
+
+  it('hides password input after cancel', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ password_protected: true })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('access-button'))
+    fireEvent.click(screen.getByTestId('password-cancel'))
+
+    expect(screen.queryByTestId('password-input')).not.toBeInTheDocument()
+  })
+
   it('logout clears token and navigates to /', async () => {
     localStorage.setItem('token', 'jwt')
     vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
@@ -169,5 +233,236 @@ describe('MySpacePage', () => {
 
     expect(localStorage.getItem('token')).toBeNull()
     expect(mockNavigate).toHaveBeenCalledWith('/')
+  })
+
+  it('opens mobile menu on hamburger click', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByTestId('hamburger-button'))
+    expect(screen.getByTestId('menu-overlay')).toBeInTheDocument()
+    expect(screen.getByTestId('close-menu-button')).toBeInTheDocument()
+  })
+
+  it('closes mobile menu on overlay click', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByTestId('hamburger-button'))
+    expect(screen.getByTestId('menu-overlay')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('menu-overlay'))
+    await waitFor(() => expect(screen.queryByTestId('menu-overlay')).not.toBeInTheDocument())
+  })
+
+  it('closes mobile menu on close button click', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByTestId('hamburger-button'))
+    expect(screen.getByTestId('menu-overlay')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('close-menu-button'))
+    await waitFor(() => expect(screen.queryByTestId('menu-overlay')).not.toBeInTheDocument())
+  })
+
+  it('shows user email on mobile header when available', async () => {
+    // Mock getUserIdentifier by setting a valid JWT token
+    localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3R1c2VyIn0.signature')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByText('testuser')).toBeInTheDocument())
+  })
+
+  it('shows upload button and navigates to /upload', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+
+    const uploadButton = screen.getByText('Ajouter des fichiers')
+    fireEvent.click(uploadButton)
+    expect(mockNavigate).toHaveBeenCalledWith('/upload')
+  })
+
+  it('navigates to / when DataShare title is clicked', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+
+    const title = screen.getByText('DataShare')
+    fireEvent.click(title)
+    expect(mockNavigate).toHaveBeenCalledWith('/')
+  })
+
+  it('opens file download in new window on Accéder button click', async () => {
+    localStorage.setItem('token', 'jwt')
+    const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ download_url: '/api/files/abc-123/download' })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByTestId('access-button'))
+    expect(windowOpenSpy).toHaveBeenCalledWith('/api/files/abc-123/download', '_blank')
+
+    windowOpenSpy.mockRestore()
+  })
+
+  it('shows lock icon for password protected files', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ password_protected: true })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => {
+      const fileRow = screen.getByTestId('file-row')
+      // Lock icon should be present in the file row
+      expect(fileRow.querySelectorAll('svg')).toHaveLength(2) // FileIcon + LockIcon
+    })
+  })
+
+  it('does not show lock icon for non-password protected files', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ password_protected: false })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => {
+      const fileRow = screen.getByTestId('file-row')
+      // Only FileIcon should be present
+      expect(fileRow.querySelectorAll('svg')).toHaveLength(1)
+    })
+  })
+
+  it('does not show lock icon for expired password protected files', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ password_protected: true, is_expired: true })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => {
+      const fileRow = screen.getByTestId('file-row')
+      // Only FileIcon should be present (no LockIcon for expired)
+      expect(fileRow.querySelectorAll('svg')).toHaveLength(1)
+    })
+  })
+
+  it('shows expiry message for expired files with "Expire demain" for 1 day', async () => {
+    localStorage.setItem('token', 'jwt')
+    const tomorrowAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ expires_at: tomorrowAt })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByText('Expire demain')).toBeInTheDocument())
+  })
+
+  it('shows "Expiré" when file expiry date is in the past', async () => {
+    localStorage.setItem('token', 'jwt')
+    const pastDate = new Date(Date.now() - 1000).toISOString()
+
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ expires_at: pastDate, is_expired: false })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByText('Expiré')).toBeInTheDocument())
+  })
+
+  it('shows correct tab button when "Tout" is selected', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: {
+        data: [
+          makeFile({ id: 1, original_name: 'active.pdf', is_expired: false }),
+          makeFile({ id: 2, original_name: 'expired.pdf', is_expired: true }),
+        ],
+      },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getAllByTestId('file-row')).toHaveLength(2))
+
+    // Click on Tous tab (should already be selected by default)
+    const toutsTab = screen.getByTestId('tab-all')
+    expect(toutsTab).toBeInTheDocument()
+
+    // Both files should be visible
+    expect(screen.getByText('active.pdf')).toBeInTheDocument()
+    expect(screen.getByText('expired.pdf')).toBeInTheDocument()
+  })
+
+  it('handles invalid token gracefully (catch block in getUserIdentifier)', async () => {
+    // Set an invalid token that will fail to parse
+    localStorage.setItem('token', 'invalid.token.format')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+    // Should render without crashing, empty state should be shown
+    expect(screen.getByTestId('empty')).toBeInTheDocument()
+  })
+
+  it('handles getFiles with ok: false', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: false,
+      status: 500,
+      data: { data: [] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+    // Should show empty state even when ok is false (since files remain empty)
+    expect(screen.getByTestId('empty')).toBeInTheDocument()
+  })
+
+  it('uses email from token when username is not available', async () => {
+    // Create a JWT with email instead of username
+    localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifQ.signature')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByText('test@example.com')).toBeInTheDocument())
+  })
+
+  it('falls back to empty string when token has neither username nor email', async () => {
+    // Create a JWT with neither username nor email
+    localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+    // Should render without the user email in the mobile header
+    expect(screen.queryByText('1234567890')).not.toBeInTheDocument()
   })
 })
