@@ -149,4 +149,55 @@ class FileHistoryControllerTest extends WebTestCase
         $expectedUrl = sprintf('/api/files/%s/download', $uploaded['token']);
         $this->assertSame($expectedUrl, $data[0]['download_url']);
     }
+
+    public function testIsExpiredTrueForExpiredFile(): void
+    {
+        $this->register('history@test.com');
+        $jwt = $this->login('history@test.com');
+        $uploaded = $this->upload($jwt);
+
+        $em   = static::getContainer()->get('doctrine')->getManager();
+        $file = $em->getRepository(\App\Entity\File::class)->findOneBy(['token' => $uploaded['token']]);
+        $file->setExpiresAt(new \DateTimeImmutable('-1 day'));
+        $em->flush();
+
+        $this->client->request('GET', '/api/files', [], [], ['HTTP_AUTHORIZATION' => "Bearer $jwt"]);
+
+        $data = json_decode($this->client->getResponse()->getContent(), true)['data'];
+        $this->assertTrue($data[0]['is_expired']);
+    }
+
+    public function testPasswordProtectedFlagInHistory(): void
+    {
+        $this->register('history@test.com');
+        $jwt = $this->login('history@test.com');
+
+        $this->client->request(
+            'POST', '/api/files', ['password' => 'secret123'], ['file' => $this->makeFile()],
+            ['HTTP_AUTHORIZATION' => "Bearer $jwt"]
+        );
+
+        $this->client->request('GET', '/api/files', [], [], ['HTTP_AUTHORIZATION' => "Bearer $jwt"]);
+
+        $data = json_decode($this->client->getResponse()->getContent(), true)['data'];
+        $this->assertTrue($data[0]['password_protected']);
+    }
+
+    public function testTagsAppearsInHistory(): void
+    {
+        $this->register('history@test.com');
+        $jwt = $this->login('history@test.com');
+
+        $this->client->request(
+            'POST', '/api/files',
+            ['tags' => ['invoice', 'project-a']],
+            ['file' => $this->makeFile()],
+            ['HTTP_AUTHORIZATION' => "Bearer $jwt"]
+        );
+
+        $this->client->request('GET', '/api/files', [], [], ['HTTP_AUTHORIZATION' => "Bearer $jwt"]);
+
+        $data = json_decode($this->client->getResponse()->getContent(), true)['data'];
+        $this->assertEqualsCanonicalizing(['invoice', 'project-a'], $data[0]['tags']);
+    }
 }
