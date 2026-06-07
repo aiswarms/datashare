@@ -8,7 +8,11 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
-beforeEach(() => mockNavigate.mockClear())
+beforeEach(() => {
+  mockNavigate.mockClear()
+  localStorage.clear()
+  vi.clearAllMocks()
+})
 
 describe('AppShell', () => {
   it('renders children', () => {
@@ -21,9 +25,21 @@ describe('AppShell', () => {
     expect(screen.getByText('DataShare')).toBeInTheDocument()
   })
 
-  it('shows Se connecter button', () => {
+  it('shows Se connecter button when no token in localStorage', () => {
     renderWithProviders(<AppShell><span /></AppShell>)
     expect(screen.getByText('Se connecter')).toBeInTheDocument()
+  })
+
+  it('shows Mon espace button when token is in localStorage', () => {
+    localStorage.setItem('token', 'test-token')
+    renderWithProviders(<AppShell><span /></AppShell>)
+    expect(screen.getByText('Mon espace')).toBeInTheDocument()
+  })
+
+  it('does not show login button when showLoginButton is false', () => {
+    renderWithProviders(<AppShell showLoginButton={false}><span /></AppShell>)
+    expect(screen.queryByText('Se connecter')).not.toBeInTheDocument()
+    expect(screen.queryByText('Mon espace')).not.toBeInTheDocument()
   })
 
   it('shows copyright footer', () => {
@@ -41,5 +57,12 @@ describe('AppShell', () => {
     renderWithProviders(<AppShell><span /></AppShell>)
     fireEvent.click(screen.getByText('Se connecter'))
     expect(mockNavigate).toHaveBeenCalledWith('/login')
+  })
+
+  it('clicking Mon espace navigates to /my-space when token exists', () => {
+    localStorage.setItem('token', 'test-token')
+    renderWithProviders(<AppShell><span /></AppShell>)
+    fireEvent.click(screen.getByText('Mon espace'))
+    expect(mockNavigate).toHaveBeenCalledWith('/my-space')
   })
 })
