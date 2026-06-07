@@ -33,17 +33,31 @@ export default function AppShell({ children, showLoginButton = true }: AppShellP
           DataShare
         </Text>
         {showLoginButton && (
-          <Button
-            size="sm"
-            bg="gray.900"
-            color="white"
-            borderRadius="full"
-            px={5}
-            _hover={{ bg: 'gray.700' }}
-            onClick={() => navigate('/login')}
-          >
-            Se connecter
-          </Button>
+          localStorage.getItem('token') ? (
+            <Button
+              size="sm"
+              bg="gray.900"
+              color="white"
+              borderRadius="full"
+              px={5}
+              _hover={{ bg: 'gray.700' }}
+              onClick={() => navigate('/my-space')}
+            >
+              Mon espace
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              bg="gray.900"
+              color="white"
+              borderRadius="full"
+              px={5}
+              _hover={{ bg: 'gray.700' }}
+              onClick={() => navigate('/login')}
+            >
+              Se connecter
+            </Button>
+          )
         )}
       </Flex>
 
