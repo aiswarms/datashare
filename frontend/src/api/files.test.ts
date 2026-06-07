@@ -1,4 +1,4 @@
-import { uploadFile } from './files'
+import { uploadFile, getFiles } from './files'
 
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
@@ -61,5 +61,30 @@ describe('uploadFile', () => {
 
     expect(result.ok).toBe(false)
     expect(result.status).toBe(413)
+  })
+})
+
+describe('getFiles', () => {
+  it('calls GET /api/files with auth header', async () => {
+    localStorage.setItem('token', 'jwt-token')
+    const body = { data: [] }
+    mockFetch.mockResolvedValue(mockResponse(true, 200, body))
+
+    const result = await getFiles()
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/files', {
+      headers: { Authorization: 'Bearer jwt-token' },
+    })
+    expect(result).toEqual({ ok: true, status: 200, data: body })
+  })
+
+  it('returns ok: false on 401', async () => {
+    localStorage.setItem('token', 'expired-token')
+    mockFetch.mockResolvedValue(mockResponse(false, 401, { message: 'Unauthorized' }))
+
+    const result = await getFiles()
+
+    expect(result.ok).toBe(false)
+    expect(result.status).toBe(401)
   })
 })

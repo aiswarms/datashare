@@ -1,5 +1,27 @@
 const BASE = '/api'
 
+export interface FileRecord {
+  id: number
+  token: string
+  original_name: string
+  mime_type: string
+  size: number
+  expires_at: string
+  uploaded_at: string
+  is_expired: boolean
+  password_protected: boolean
+  download_url: string
+  tags: string[]
+}
+
+export async function getFiles() {
+  const token = localStorage.getItem('token')
+  const res = await fetch(`${BASE}/files`, {
+    headers: { Authorization: `Bearer ${token ?? ''}` },
+  })
+  return { ok: res.ok, status: res.status, data: await res.json() as { data: FileRecord[] } }
+}
+
 export async function uploadFile(file: File, expiresInDays: number, password?: string) {
   const form = new FormData()
   form.append('file', file)
