@@ -42,6 +42,14 @@ class FileStorageService
         ]);
     }
 
+    public function delete(string $storagePath): void
+    {
+        $this->client->deleteObject([
+            'Bucket' => $this->bucket,
+            'Key'    => $storagePath,
+        ]);
+    }
+
     public function getStream(string $storagePath): \Psr\Http\Message\StreamInterface
     {
         $result = $this->client->getObject([
