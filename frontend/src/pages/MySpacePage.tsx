@@ -39,6 +39,22 @@ const LockIcon = () => (
   </svg>
 )
 
+const TrashIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={CORAL} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    <path d="M10 11v6M14 11v6" />
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+  </svg>
+)
+
+const ArrowIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={CORAL} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+)
+
 type Tab = 'all' | 'active' | 'expired'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'Tout' },
@@ -342,26 +358,35 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
           <HStack gap={2} flexShrink={0}>
             <Button
               size="xs"
-              bg={CORAL}
-              color="white"
-              borderRadius="full"
-              _hover={{ bg: '#c25a4e' }}
+              bg="white"
+              color={CORAL}
+              border="1px solid"
+              borderColor={CORAL}
+              borderRadius="md"
+              _hover={{ bg: '#fdf2f0' }}
               onClick={() => setConfirmDelete(true)}
               data-testid="delete-button"
             >
-              Supprimer
+              <HStack gap={1}>
+                <TrashIcon />
+                <span>Supprimer</span>
+              </HStack>
             </Button>
             <Button
               size="xs"
-              variant="outline"
-              borderRadius="full"
-              borderColor="gray.300"
-              color="gray.700"
-              _hover={{ bg: 'gray.50' }}
+              bg="white"
+              color={CORAL}
+              border="1px solid"
+              borderColor={CORAL}
+              borderRadius="md"
+              _hover={{ bg: '#fdf2f0' }}
               onClick={handleAccess}
               data-testid="access-button"
             >
-              Accéder →
+              <HStack gap={1}>
+                <span>Accéder</span>
+                <ArrowIcon />
+              </HStack>
             </Button>
           </HStack>
         )}
@@ -374,11 +399,13 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
           </Text>
           <Button
             size="sm"
-            bg={CORAL}
-            color="white"
-            borderRadius="full"
+            bg="white"
+            color={CORAL}
+            border="1px solid"
+            borderColor={CORAL}
+            borderRadius="md"
             flexShrink={0}
-            _hover={{ bg: '#c25a4e' }}
+            _hover={{ bg: '#fdf2f0' }}
             loading={deleting}
             onClick={handleDeleteConfirmed}
             data-testid="confirm-delete-button"
