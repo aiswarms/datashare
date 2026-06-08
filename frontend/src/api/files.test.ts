@@ -1,4 +1,4 @@
-import { uploadFile, getFiles } from './files'
+import { uploadFile, getFiles, deleteFile } from './files'
 
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
@@ -86,5 +86,30 @@ describe('getFiles', () => {
 
     expect(result.ok).toBe(false)
     expect(result.status).toBe(401)
+  })
+})
+
+describe('deleteFile', () => {
+  it('sends DELETE /api/files/{id} with auth header', async () => {
+    localStorage.setItem('token', 'jwt-token')
+    mockFetch.mockResolvedValue({ ok: true, status: 204 })
+
+    const result = await deleteFile(42)
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/files/42', {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer jwt-token' },
+    })
+    expect(result).toEqual({ ok: true, status: 204 })
+  })
+
+  it('returns ok: false on 403', async () => {
+    localStorage.setItem('token', 'jwt-token')
+    mockFetch.mockResolvedValue({ ok: false, status: 403 })
+
+    const result = await deleteFile(42)
+
+    expect(result.ok).toBe(false)
+    expect(result.status).toBe(403)
   })
 })

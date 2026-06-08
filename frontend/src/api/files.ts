@@ -22,6 +22,15 @@ export async function getFiles() {
   return { ok: res.ok, status: res.status, data: await res.json() as { data: FileRecord[] } }
 }
 
+export async function deleteFile(id: number) {
+  const token = localStorage.getItem('token')
+  const res = await fetch(`${BASE}/files/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token ?? ''}` },
+  })
+  return { ok: res.ok, status: res.status }
+}
+
 export async function uploadFile(file: File, expiresInDays: number, password?: string) {
   const form = new FormData()
   form.append('file', file)
