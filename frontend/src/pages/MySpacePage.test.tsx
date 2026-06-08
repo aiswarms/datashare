@@ -14,6 +14,7 @@ vi.mock('../api/files')
 beforeEach(() => {
   mockNavigate.mockClear()
   vi.mocked(files.getFiles).mockClear()
+  vi.mocked(files.deleteFile).mockClear()
   localStorage.clear()
 })
 
@@ -205,6 +206,38 @@ describe('MySpacePage', () => {
 
     expect(openSpy).toHaveBeenCalledWith('/api/files/abc-123/download?password=secret', '_blank')
     openSpy.mockRestore()
+  })
+
+  it('clicking Supprimer removes the file from the list', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1, original_name: 'to-delete.pdf' })] },
+    })
+    vi.mocked(files.deleteFile).mockResolvedValue({ ok: true, status: 204 })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByText('to-delete.pdf')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('delete-button'))
+
+    await waitFor(() => expect(screen.queryByText('to-delete.pdf')).not.toBeInTheDocument())
+    expect(files.deleteFile).toHaveBeenCalledWith(1)
+  })
+
+  it('keeps the file in the list when delete fails', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1, original_name: 'keep.pdf' })] },
+    })
+    vi.mocked(files.deleteFile).mockResolvedValue({ ok: false, status: 403 })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByText('keep.pdf')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('delete-button'))
+
+    await waitFor(() => expect(files.deleteFile).toHaveBeenCalled())
+    expect(screen.getByText('keep.pdf')).toBeInTheDocument()
   })
 
   it('hides password input after cancel', async () => {

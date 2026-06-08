@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Box, Flex, Text, Button, HStack, VStack, Input } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
-import { getFiles, type FileRecord } from '../api/files'
+import { getFiles, deleteFile, type FileRecord } from '../api/files'
 
 const CORAL = '#D4675A'
 const BG = '#FAF7F4'
@@ -198,7 +198,11 @@ export default function MySpacePage() {
           ) : (
             <VStack gap={2} align="stretch">
               {filtered.map(file => (
-                <FileRow key={file.id} file={file} />
+                <FileRow
+                  key={file.id}
+                  file={file}
+                  onDelete={() => setFiles(prev => prev.filter(f => f.id !== file.id))}
+                />
               ))}
             </VStack>
           )}
@@ -265,11 +269,22 @@ export default function MySpacePage() {
   )
 }
 
-function FileRow({ file }: { file: FileRecord }) {
+function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void }) {
   const expiry = formatExpiry(file)
   const [askPassword, setAskPassword] = useState(false)
   const [password, setPassword] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  async function handleDelete() {
+    setDeleting(true)
+    const { ok } = await deleteFile(file.id)
+    if (ok) {
+      onDelete()
+    } else {
+      setDeleting(false)
+    }
+  }
 
   function handleAccess() {
     if (file.password_protected) {
@@ -329,6 +344,8 @@ function FileRow({ file }: { file: FileRecord }) {
               color="white"
               borderRadius="full"
               _hover={{ bg: '#c25a4e' }}
+              loading={deleting}
+              onClick={handleDelete}
               data-testid="delete-button"
             >
               Supprimer
