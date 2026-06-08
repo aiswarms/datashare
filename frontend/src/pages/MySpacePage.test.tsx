@@ -208,7 +208,23 @@ describe('MySpacePage', () => {
     openSpy.mockRestore()
   })
 
-  it('clicking Supprimer removes the file from the list', async () => {
+  it('clicking Supprimer shows confirmation, not delete immediately', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1, original_name: 'to-delete.pdf' })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('delete-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('delete-button'))
+
+    expect(screen.getByTestId('confirm-delete-button')).toBeInTheDocument()
+    expect(screen.getByTestId('cancel-delete-button')).toBeInTheDocument()
+    expect(files.deleteFile).not.toHaveBeenCalled()
+  })
+
+  it('confirming delete removes the file from the list', async () => {
     localStorage.setItem('token', 'jwt')
     vi.mocked(files.getFiles).mockResolvedValue({
       ok: true, status: 200,
@@ -217,11 +233,29 @@ describe('MySpacePage', () => {
     vi.mocked(files.deleteFile).mockResolvedValue({ ok: true, status: 204 })
     renderWithProviders(<MySpacePage />)
 
-    await waitFor(() => expect(screen.getByText('to-delete.pdf')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('delete-button')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('delete-button'))
+    fireEvent.click(screen.getByTestId('confirm-delete-button'))
 
     await waitFor(() => expect(screen.queryByText('to-delete.pdf')).not.toBeInTheDocument())
     expect(files.deleteFile).toHaveBeenCalledWith(1)
+  })
+
+  it('cancelling delete keeps the file in the list', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1, original_name: 'keep.pdf' })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('delete-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('delete-button'))
+    fireEvent.click(screen.getByTestId('cancel-delete-button'))
+
+    expect(screen.queryByTestId('confirm-delete-button')).not.toBeInTheDocument()
+    expect(screen.getByText('keep.pdf')).toBeInTheDocument()
+    expect(files.deleteFile).not.toHaveBeenCalled()
   })
 
   it('keeps the file in the list when delete fails', async () => {
@@ -233,8 +267,9 @@ describe('MySpacePage', () => {
     vi.mocked(files.deleteFile).mockResolvedValue({ ok: false, status: 403 })
     renderWithProviders(<MySpacePage />)
 
-    await waitFor(() => expect(screen.getByText('keep.pdf')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('delete-button')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('delete-button'))
+    fireEvent.click(screen.getByTestId('confirm-delete-button'))
 
     await waitFor(() => expect(files.deleteFile).toHaveBeenCalled())
     expect(screen.getByText('keep.pdf')).toBeInTheDocument()

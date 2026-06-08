@@ -273,16 +273,18 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
   const expiry = formatExpiry(file)
   const [askPassword, setAskPassword] = useState(false)
   const [password, setPassword] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  async function handleDelete() {
+  async function handleDeleteConfirmed() {
     setDeleting(true)
     const { ok } = await deleteFile(file.id)
     if (ok) {
       onDelete()
     } else {
       setDeleting(false)
+      setConfirmDelete(false)
     }
   }
 
@@ -344,8 +346,7 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
               color="white"
               borderRadius="full"
               _hover={{ bg: '#c25a4e' }}
-              loading={deleting}
-              onClick={handleDelete}
+              onClick={() => setConfirmDelete(true)}
               data-testid="delete-button"
             >
               Supprimer
@@ -365,6 +366,37 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
           </HStack>
         )}
       </Flex>
+
+      {confirmDelete && (
+        <HStack px={4} pb={3} gap={2} align="center">
+          <Text fontSize="sm" color="gray.600" flex="1">
+            Confirmer la suppression ?
+          </Text>
+          <Button
+            size="sm"
+            bg={CORAL}
+            color="white"
+            borderRadius="full"
+            flexShrink={0}
+            _hover={{ bg: '#c25a4e' }}
+            loading={deleting}
+            onClick={handleDeleteConfirmed}
+            data-testid="confirm-delete-button"
+          >
+            Supprimer
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            color="gray.500"
+            flexShrink={0}
+            onClick={() => setConfirmDelete(false)}
+            data-testid="cancel-delete-button"
+          >
+            Annuler
+          </Button>
+        </HStack>
+      )}
 
       {askPassword && (
         <HStack px={4} pb={3} gap={2}>
