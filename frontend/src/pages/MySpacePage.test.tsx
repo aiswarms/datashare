@@ -343,13 +343,12 @@ describe('MySpacePage', () => {
     await waitFor(() => expect(screen.queryByTestId('menu-overlay')).not.toBeInTheDocument())
   })
 
-  it('shows user email on mobile header when available', async () => {
-    // Mock getUserIdentifier by setting a valid JWT token
+  it('renders correctly with a valid JWT token', async () => {
     localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3R1c2VyIn0.signature')
     vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
     renderWithProviders(<MySpacePage />)
 
-    await waitFor(() => expect(screen.getByText('testuser')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
   })
 
   it('shows upload button and navigates to /upload', async () => {
@@ -405,7 +404,7 @@ describe('MySpacePage', () => {
     await waitFor(() => {
       const fileRow = screen.getByTestId('file-row')
       // Lock icon should be present in the file row
-      expect(fileRow.querySelectorAll('svg')).toHaveLength(2) // FileIcon + LockIcon
+      expect(fileRow.querySelectorAll('svg')).toHaveLength(4) // FileIcon + LockIcon + TrashIcon + ArrowIcon
     })
   })
 
@@ -419,8 +418,8 @@ describe('MySpacePage', () => {
 
     await waitFor(() => {
       const fileRow = screen.getByTestId('file-row')
-      // Only FileIcon should be present
-      expect(fileRow.querySelectorAll('svg')).toHaveLength(1)
+      // FileIcon + TrashIcon + ArrowIcon (no LockIcon for non-protected files)
+      expect(fileRow.querySelectorAll('svg')).toHaveLength(3)
     })
   })
 
@@ -514,13 +513,12 @@ describe('MySpacePage', () => {
     expect(screen.getByTestId('empty')).toBeInTheDocument()
   })
 
-  it('uses email from token when username is not available', async () => {
-    // Create a JWT with email instead of username
+  it('renders correctly with an email-only JWT token', async () => {
     localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifQ.signature')
     vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
     renderWithProviders(<MySpacePage />)
 
-    await waitFor(() => expect(screen.getByText('test@example.com')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
   })
 
   it('falls back to empty string when token has neither username nor email', async () => {
@@ -532,5 +530,27 @@ describe('MySpacePage', () => {
     await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
     // Should render without the user email in the mobile header
     expect(screen.queryByText('1234567890')).not.toBeInTheDocument()
+  })
+
+  it('submits password form on Enter key press', async () => {
+    localStorage.setItem('token', 'jwt')
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ password_protected: true })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('access-button'))
+
+    const passwordInput = screen.getByTestId('password-input') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: 'mypassword' } })
+
+    // Simulate Enter key press
+    fireEvent.keyDown(passwordInput, { key: 'Enter', code: 'Enter' })
+
+    expect(openSpy).toHaveBeenCalledWith('/api/files/abc-123/download?password=mypassword', '_blank')
+    openSpy.mockRestore()
   })
 })

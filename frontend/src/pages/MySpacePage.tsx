@@ -5,6 +5,7 @@ import { getFiles, deleteFile, type FileRecord } from '../api/files'
 
 const CORAL = '#D4675A'
 const BG = '#FAF7F4'
+const SIDEBAR_GRADIENT = 'linear-gradient(160deg, #D4675A 0%, #F0A882 100%)'
 
 function formatExpiry(file: FileRecord): string {
   if (file.is_expired) return 'Expiré'
@@ -48,16 +49,24 @@ const TrashIcon = () => (
   </svg>
 )
 
-const ArrowIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={CORAL} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const ArrowRightIcon = ({ color = CORAL }: { color?: string }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="5" y1="12" x2="19" y2="12" />
     <polyline points="12 5 19 12 12 19" />
   </svg>
 )
 
+const LogoutIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={CORAL} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+)
+
 type Tab = 'all' | 'active' | 'expired'
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'all', label: 'Tout' },
+  { key: 'all', label: 'Tous' },
   { key: 'active', label: 'Actifs' },
   { key: 'expired', label: 'Expiré' },
 ]
@@ -68,7 +77,6 @@ export default function MySpacePage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('all')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const userEmail = getUserIdentifier()
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -95,63 +103,62 @@ export default function MySpacePage() {
       {/* Header */}
       <Flex
         px={6}
-        py={4}
+        py={3}
         align="center"
         justify="space-between"
-        bg="white"
+        bg={BG}
         borderBottom="1px solid"
-        borderColor="gray.100"
+        borderColor="gray.200"
       >
         <Text fontWeight="bold" fontSize="lg" cursor="pointer" onClick={() => navigate('/')}>
           DataShare
         </Text>
 
         {/* Desktop actions */}
-        <HStack gap={2} display={{ base: 'none', md: 'flex' }}>
+        <HStack gap={3} display={{ base: 'none', md: 'flex' }}>
           <Button
             size="sm"
-            bg={CORAL}
+            bg="gray.900"
             color="white"
-            borderRadius="full"
+            borderRadius="lg"
             px={5}
-            _hover={{ bg: '#c25a4e' }}
+            _hover={{ bg: 'gray.700' }}
             onClick={() => navigate('/upload')}
           >
             Ajouter des fichiers
           </Button>
           <Button
             size="sm"
-            bg="gray.900"
-            color="white"
-            borderRadius="full"
-            px={5}
-            _hover={{ bg: 'gray.700' }}
+            bg="transparent"
+            color={CORAL}
+            border="1px solid"
+            borderColor={CORAL}
+            borderRadius="lg"
+            px={4}
+            _hover={{ bg: '#fdf2f0' }}
             onClick={handleLogout}
             data-testid="logout-button"
           >
-            ← Se déconnecter
+            <HStack gap={1.5}>
+              <LogoutIcon />
+              <span>Déconnexion</span>
+            </HStack>
           </Button>
         </HStack>
 
-        {/* Mobile header right */}
-        <HStack gap={3} display={{ base: 'flex', md: 'none' }}>
-          {userEmail && (
-            <Text fontSize="sm" color="gray.600" fontWeight="medium">
-              {userEmail}
-            </Text>
-          )}
-          <Box
-            cursor="pointer"
-            onClick={() => setMobileMenuOpen(true)}
-            data-testid="hamburger-button"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </Box>
-        </HStack>
+        {/* Mobile hamburger */}
+        <Box
+          cursor="pointer"
+          display={{ base: 'block', md: 'none' }}
+          onClick={() => setMobileMenuOpen(true)}
+          data-testid="hamburger-button"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </Box>
       </Flex>
 
       <Flex flex="1">
@@ -161,14 +168,12 @@ export default function MySpacePage() {
           w="200px"
           flexShrink={0}
           p={4}
-          borderRight="1px solid"
-          borderColor="gray.100"
-          bg="white"
+          style={{ background: SIDEBAR_GRADIENT }}
         >
           <Box
             px={4}
             py={2}
-            bg={CORAL}
+            style={{ background: 'rgba(255,255,255,0.25)' }}
             color="white"
             borderRadius="full"
             fontSize="sm"
@@ -185,26 +190,37 @@ export default function MySpacePage() {
             Mes fichiers
           </Text>
 
-          {/* Tabs */}
-          <HStack gap={2} mb={6}>
-            {TABS.map(({ key, label }) => (
-              <Button
+          {/* Tabs — segmented control */}
+          <Box
+            display="inline-flex"
+            border="1px solid"
+            borderColor="gray.200"
+            borderRadius="md"
+            overflow="hidden"
+            mb={6}
+          >
+            {TABS.map(({ key, label }, i) => (
+              <Box
                 key={key}
-                size="sm"
-                borderRadius="full"
+                as="button"
+                px={5}
+                py={1.5}
+                fontSize="sm"
+                fontWeight={tab === key ? 'semibold' : 'normal'}
+                cursor="pointer"
                 bg={tab === key ? CORAL : 'transparent'}
-                color={tab === key ? 'white' : 'gray.600'}
-                border="1px solid"
-                borderColor={tab === key ? CORAL : 'gray.300'}
-                px={4}
-                _hover={{ bg: tab === key ? '#c25a4e' : 'gray.50' }}
+                color={tab === key ? 'white' : 'gray.700'}
+                borderLeft={i > 0 ? '1px solid' : 'none'}
+                borderColor="gray.200"
                 onClick={() => setTab(key)}
                 data-testid={`tab-${key}`}
+                _hover={{ bg: tab === key ? '#c25a4e' : 'gray.50' }}
+                transition="background 0.15s"
               >
                 {label}
-              </Button>
+              </Box>
             ))}
-          </HStack>
+          </Box>
 
           {/* File list */}
           {loading ? (
@@ -242,16 +258,17 @@ export default function MySpacePage() {
             left={0}
             bottom={0}
             w="240px"
-            bg="white"
             zIndex={20}
             p={4}
+            style={{ background: SIDEBAR_GRADIENT }}
           >
             <Flex justify="space-between" align="center" mb={6}>
-              <Text fontWeight="bold" fontSize="md">Menu</Text>
+              <Text fontWeight="bold" fontSize="md" color="white">DataShare</Text>
               <Box
                 cursor="pointer"
                 onClick={() => setMobileMenuOpen(false)}
                 data-testid="close-menu-button"
+                color="white"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -259,21 +276,35 @@ export default function MySpacePage() {
                 </svg>
               </Box>
             </Flex>
-            <Box px={4} py={2} bg={CORAL} color="white" borderRadius="full" fontSize="sm" fontWeight="medium" textAlign="center">
+            <Box
+              px={4} py={2}
+              style={{ background: 'rgba(255,255,255,0.25)' }}
+              color="white"
+              borderRadius="full"
+              fontSize="sm"
+              fontWeight="medium"
+              textAlign="center"
+              mb={4}
+            >
               Mes fichiers
             </Box>
-            <Box mt={4}>
-              <Button
-                w="full"
-                size="sm"
-                variant="ghost"
-                color="gray.600"
-                justifyContent="flex-start"
-                onClick={handleLogout}
-              >
-                ← Se déconnecter
-              </Button>
-            </Box>
+            <Button
+              w="full"
+              size="sm"
+              bg="transparent"
+              color="white"
+              justifyContent="flex-start"
+              onClick={handleLogout}
+            >
+              <HStack gap={1.5}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span>Déconnexion</span>
+              </HStack>
+            </Button>
           </Box>
         </>
       )}
@@ -325,7 +356,7 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
       bg="white"
       borderRadius="md"
       border="1px solid"
-      borderColor="gray.100"
+      borderColor="gray.150"
       data-testid="file-row"
     >
       <Flex align="center" px={4} py={3} gap={3}>
@@ -334,12 +365,12 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
         <Box flex="1" minW={0}>
           <Text
             fontSize="sm"
-            fontWeight="medium"
+            fontWeight="semibold"
             style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
             {file.original_name}
           </Text>
-          <Text fontSize="xs" color={file.is_expired ? CORAL : 'gray.500'}>
+          <Text fontSize="xs" color={file.is_expired ? CORAL : 'gray.500'} fontWeight={file.is_expired ? 'semibold' : 'normal'}>
             {expiry}
           </Text>
         </Box>
@@ -351,8 +382,8 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
         )}
 
         {file.is_expired ? (
-          <Text fontSize="xs" color="gray.400" display={{ base: 'none', md: 'block' }}>
-            Ce fichier a expiré. Il n'est plus stocké chez nous.
+          <Text fontSize="sm" color="gray.400" display={{ base: 'none', md: 'block' }}>
+            Ce fichier à expiré, il n'est plus stocké chez nous
           </Text>
         ) : (
           <HStack gap={2} flexShrink={0}>
@@ -363,6 +394,7 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
               border="1px solid"
               borderColor={CORAL}
               borderRadius="md"
+              px={3}
               _hover={{ bg: '#fdf2f0' }}
               onClick={() => setConfirmDelete(true)}
               data-testid="delete-button"
@@ -379,13 +411,14 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
               border="1px solid"
               borderColor={CORAL}
               borderRadius="md"
+              px={3}
               _hover={{ bg: '#fdf2f0' }}
               onClick={handleAccess}
               data-testid="access-button"
             >
               <HStack gap={1}>
                 <span>Accéder</span>
-                <ArrowIcon />
+                <ArrowRightIcon />
               </HStack>
             </Button>
           </HStack>
@@ -442,7 +475,7 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
             size="sm"
             bg={CORAL}
             color="white"
-            borderRadius="full"
+            borderRadius="md"
             flexShrink={0}
             _hover={{ bg: '#c25a4e' }}
             onClick={handlePasswordSubmit}
