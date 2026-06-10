@@ -138,6 +138,23 @@ class UploadControllerUnitTest extends TestCase
         $this->assertSame(['foo', 'bar'], $data['tags']);
     }
 
+    public function testAnonUploadReturns201(): void
+    {
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->expects($this->once())->method('persist')
+            ->willReturnCallback(function (File $f): void {
+                (new \ReflectionProperty(File::class, 'id'))->setValue($f, 1);
+            });
+        $em->expects($this->once())->method('flush');
+
+        $request  = new Request([], [], [], [], ['file' => $this->makeUploadedFile()]);
+        $response = ($this->controller)($request, $em, $this->storage, null);
+
+        $this->assertSame(Response::HTTP_CREATED, $response->getStatusCode());
+        $data = json_decode($response->getContent(), true);
+        $this->assertFalse($data['password_protected']);
+    }
+
     public function testDuplicateTagsAreDeduped(): void
     {
         $em = $this->createStub(EntityManagerInterface::class);

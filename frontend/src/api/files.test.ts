@@ -1,4 +1,4 @@
-import { uploadFile, getFiles, deleteFile } from './files'
+import { uploadFile, uploadAnonymous, getFiles, deleteFile } from './files'
 
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
@@ -61,6 +61,43 @@ describe('uploadFile', () => {
 
     expect(result.ok).toBe(false)
     expect(result.status).toBe(413)
+  })
+})
+
+describe('uploadAnonymous', () => {
+  it('posts multipart form to /api/files without auth header', async () => {
+    const body = { id: 1, token: 'abc', download_url: '/api/files/abc/download' }
+    mockFetch.mockResolvedValue(mockResponse(true, 201, body))
+
+    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
+    const result = await uploadAnonymous(file, 7)
+
+    const [url, options] = mockFetch.mock.calls[0]
+    expect(url).toBe('/api/files')
+    expect(options.method).toBe('POST')
+    expect(options.headers).toBeUndefined()
+    expect(result).toEqual({ ok: true, status: 201, data: body })
+  })
+
+  it('includes password when provided', async () => {
+    mockFetch.mockResolvedValue(mockResponse(true, 201, {}))
+
+    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
+    await uploadAnonymous(file, 3, 'secret')
+
+    const formData: FormData = mockFetch.mock.calls[0][1].body
+    expect(formData.get('password')).toBe('secret')
+    expect(formData.get('expires_in_days')).toBe('3')
+  })
+
+  it('omits password when not provided', async () => {
+    mockFetch.mockResolvedValue(mockResponse(true, 201, {}))
+
+    const file = new File(['content'], 'test.txt', { type: 'text/plain' })
+    await uploadAnonymous(file, 7)
+
+    const formData: FormData = mockFetch.mock.calls[0][1].body
+    expect(formData.get('password')).toBeNull()
   })
 })
 

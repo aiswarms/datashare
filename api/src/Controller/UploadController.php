@@ -54,7 +54,7 @@ class UploadController
         Request $request,
         EntityManagerInterface $em,
         FileStorageService $storage,
-        #[CurrentUser] User $user,
+        #[CurrentUser] ?User $user,
     ): JsonResponse {
         $uploadedFile = $request->files->get('file');
         if (!$uploadedFile) {

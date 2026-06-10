@@ -61,3 +61,13 @@ export async function uploadFile(file: File, expiresInDays: number, password?: s
   })
   return { ok: res.ok, status: res.status, data: await res.json() }
 }
+
+export async function uploadAnonymous(file: File, expiresInDays: number, password?: string) {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('expires_in_days', String(expiresInDays))
+  if (password) form.append('password', password)
+
+  const res = await fetch(`${BASE}/files`, { method: 'POST', body: form })
+  return { ok: res.ok, status: res.status, data: await res.json() }
+}

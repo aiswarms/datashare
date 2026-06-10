@@ -88,10 +88,28 @@ class UploadControllerTest extends WebTestCase
         $this->assertSame(['foo', 'bar'], $data['tags']);
     }
 
-    public function testUploadRequiresAuth(): void
+    public function testAnonUploadSuccess(): void
     {
         $this->client->request('POST', '/api/files', [], ['file' => $this->makeFile()]);
-        $this->assertResponseStatusCodeSame(401);
+
+        $this->assertResponseStatusCodeSame(201);
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('token', $data);
+        $this->assertArrayHasKey('download_url', $data);
+        $this->assertFalse($data['password_protected']);
+    }
+
+    public function testAnonUploadWithPassword(): void
+    {
+        $this->client->request(
+            'POST', '/api/files',
+            ['password' => 'secret123'],
+            ['file' => $this->makeFile()]
+        );
+
+        $this->assertResponseStatusCodeSame(201);
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertTrue($data['password_protected']);
     }
 
     public function testUploadMissingFile(): void
