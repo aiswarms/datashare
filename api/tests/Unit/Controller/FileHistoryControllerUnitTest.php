@@ -28,7 +28,7 @@ class FileHistoryControllerUnitTest extends TestCase
 
     public function testInvokeWithEmptyFileList(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
 
         $this->em->expects($this->once())
             ->method('getRepository')
@@ -51,7 +51,7 @@ class FileHistoryControllerUnitTest extends TestCase
 
     public function testInvokeWithSingleFile(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
         $file = $this->createMock(File::class);
 
         $file->expects($this->once())->method('getId')->willReturn(1);
@@ -98,7 +98,7 @@ class FileHistoryControllerUnitTest extends TestCase
 
     public function testInvokeWithPasswordProtectedFile(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
         $file = $this->createMock(File::class);
 
         $file->expects($this->once())->method('getId')->willReturn(1);
@@ -137,7 +137,7 @@ class FileHistoryControllerUnitTest extends TestCase
 
     public function testInvokeWithExpiredFile(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
         $file = $this->createMock(File::class);
 
         $file->expects($this->once())->method('getId')->willReturn(1);
@@ -175,7 +175,7 @@ class FileHistoryControllerUnitTest extends TestCase
 
     public function testInvokeWithMultipleFiles(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
 
         $file1 = $this->createMock(File::class);
         $file1->expects($this->once())->method('getId')->willReturn(1);
@@ -227,7 +227,7 @@ class FileHistoryControllerUnitTest extends TestCase
 
     public function testInvokeWithFileTags(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
         $file = $this->createMock(File::class);
 
         $tag1 = $this->createMock(Tag::class);
@@ -275,7 +275,7 @@ class FileHistoryControllerUnitTest extends TestCase
 
     public function testResponseHeaderAndStatusCode(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
 
         $this->em->expects($this->once())
             ->method('getRepository')

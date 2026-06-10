@@ -6,7 +6,7 @@ use App\Controller\RegisterController;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -16,22 +16,23 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class RegisterControllerUnitTest extends TestCase
 {
-    private EntityManagerInterface&MockObject $em;
-    private UserPasswordHasherInterface&MockObject $hasher;
-    private ValidatorInterface&MockObject $validator;
-    private EntityRepository&MockObject $repository;
+    private UserPasswordHasherInterface&Stub $hasher;
+    private ValidatorInterface&Stub $validator;
+    private EntityRepository&Stub $repository;
     private RegisterController $controller;
 
     protected function setUp(): void
     {
-        $this->em = $this->createMock(EntityManagerInterface::class);
-        $this->hasher = $this->createMock(UserPasswordHasherInterface::class);
-        $this->validator = $this->createMock(ValidatorInterface::class);
-        $this->repository = $this->createMock(EntityRepository::class);
+        $this->hasher     = $this->createStub(UserPasswordHasherInterface::class);
+        $this->validator  = $this->createStub(ValidatorInterface::class);
+        $this->repository = $this->createStub(EntityRepository::class);
+    }
 
-        $this->em->method('getRepository')->with(User::class)->willReturn($this->repository);
-
-        $this->controller = new RegisterController($this->em, $this->hasher, $this->validator);
+    private function makeEm(): EntityManagerInterface&Stub
+    {
+        $em = $this->createStub(EntityManagerInterface::class);
+        $em->method('getRepository')->willReturn($this->repository);
+        return $em;
     }
 
     private function makeRequest(array $data): Request
@@ -41,16 +42,21 @@ class RegisterControllerUnitTest extends TestCase
 
     public function testRegisterSuccess(): void
     {
-        $this->validator->method('validate')->willReturn(new ConstraintViolationList());
-        $this->repository->method('findOneBy')->willReturn(null);
-        $this->hasher->method('hashPassword')->willReturn('hashed');
-        $this->em->expects($this->once())->method('persist')
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('getRepository')->willReturn($this->repository);
+        $em->expects($this->once())->method('persist')
             ->willReturnCallback(function (User $user): void {
                 (new \ReflectionProperty(User::class, 'id'))->setValue($user, 42);
             });
-        $this->em->expects($this->once())->method('flush');
+        $em->expects($this->once())->method('flush');
 
-        $response = ($this->controller)($this->makeRequest(['email' => 'a@b.com', 'password' => 'password123']));
+        $this->validator->method('validate')->willReturn(new ConstraintViolationList());
+        $this->repository->method('findOneBy')->willReturn(null);
+        $this->hasher->method('hashPassword')->willReturn('hashed');
+
+        $response = (new RegisterController($em, $this->hasher, $this->validator))(
+            $this->makeRequest(['email' => 'a@b.com', 'password' => 'password123'])
+        );
 
         $this->assertSame(201, $response->getStatusCode());
         $body = json_decode($response->getContent(), true);
@@ -59,11 +65,14 @@ class RegisterControllerUnitTest extends TestCase
 
     public function testRegisterValidationError(): void
     {
-        $violation = $this->createMock(ConstraintViolation::class);
+        $violation = $this->createStub(ConstraintViolation::class);
         $violation->method('getMessage')->willReturn('This value is not a valid email address.');
         $this->validator->method('validate')->willReturn(new ConstraintViolationList([$violation]));
 
-        $response = ($this->controller)($this->makeRequest(['email' => 'bad', 'password' => 'password123']));
+        $em       = $this->makeEm();
+        $response = (new RegisterController($em, $this->hasher, $this->validator))(
+            $this->makeRequest(['email' => 'bad', 'password' => 'password123'])
+        );
 
         $this->assertSame(400, $response->getStatusCode());
         $body = json_decode($response->getContent(), true);
@@ -74,9 +83,14 @@ class RegisterControllerUnitTest extends TestCase
     {
         $this->validator->method('validate')->willReturn(new ConstraintViolationList());
         $this->repository->method('findOneBy')->willReturn(new User('a@b.com', 'hash'));
-        $this->em->expects($this->never())->method('persist');
 
-        $response = ($this->controller)($this->makeRequest(['email' => 'a@b.com', 'password' => 'password123']));
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('getRepository')->willReturn($this->repository);
+        $em->expects($this->never())->method('persist');
+
+        $response = (new RegisterController($em, $this->hasher, $this->validator))(
+            $this->makeRequest(['email' => 'a@b.com', 'password' => 'password123'])
+        );
 
         $this->assertSame(409, $response->getStatusCode());
         $body = json_decode($response->getContent(), true);

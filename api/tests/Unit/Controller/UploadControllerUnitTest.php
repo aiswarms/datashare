@@ -32,12 +32,26 @@ class UploadControllerUnitTest extends TestCase
     private function makeUploadedFile(string $name = 'doc.txt', int $size = 100, ?string $ext = null): UploadedFile&Stub
     {
         $mock = $this->createStub(UploadedFile::class);
+        $mock->method('isValid')->willReturn(true);
         $mock->method('getClientOriginalName')->willReturn($name);
         $mock->method('getClientOriginalExtension')->willReturn($ext ?? pathinfo($name, PATHINFO_EXTENSION));
         $mock->method('getMimeType')->willReturn('text/plain');
         $mock->method('getSize')->willReturn($size);
         $mock->method('getPathname')->willReturn('/tmp/test');
         return $mock;
+    }
+
+    public function testInvalidUploadReturns400(): void
+    {
+        $mock = $this->createStub(UploadedFile::class);
+        $mock->method('isValid')->willReturn(false);
+        $mock->method('getError')->willReturn(\UPLOAD_ERR_INI_SIZE);
+
+        $request  = new Request([], [], [], [], ['file' => $mock]);
+        $response = ($this->controller)($request, $this->em, $this->storage, $this->user);
+
+        $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        $this->assertSame('UPLOAD_ERROR', json_decode($response->getContent(), true)['error']);
     }
 
     public function testMissingFileReturns400(): void

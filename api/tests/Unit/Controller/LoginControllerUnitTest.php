@@ -7,7 +7,7 @@ use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -17,22 +17,22 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class LoginControllerUnitTest extends TestCase
 {
-    private EntityManagerInterface&MockObject $em;
-    private UserPasswordHasherInterface&MockObject $hasher;
-    private ValidatorInterface&MockObject $validator;
-    private JWTTokenManagerInterface&MockObject $jwtManager;
-    private EntityRepository&MockObject $repository;
+    private EntityManagerInterface&Stub $em;
+    private UserPasswordHasherInterface&Stub $hasher;
+    private ValidatorInterface&Stub $validator;
+    private JWTTokenManagerInterface&Stub $jwtManager;
+    private EntityRepository&Stub $repository;
     private LoginController $controller;
 
     protected function setUp(): void
     {
-        $this->em = $this->createMock(EntityManagerInterface::class);
-        $this->hasher = $this->createMock(UserPasswordHasherInterface::class);
-        $this->validator = $this->createMock(ValidatorInterface::class);
-        $this->jwtManager = $this->createMock(JWTTokenManagerInterface::class);
-        $this->repository = $this->createMock(EntityRepository::class);
+        $this->em         = $this->createStub(EntityManagerInterface::class);
+        $this->hasher     = $this->createStub(UserPasswordHasherInterface::class);
+        $this->validator  = $this->createStub(ValidatorInterface::class);
+        $this->jwtManager = $this->createStub(JWTTokenManagerInterface::class);
+        $this->repository = $this->createStub(EntityRepository::class);
 
-        $this->em->method('getRepository')->with(User::class)->willReturn($this->repository);
+        $this->em->method('getRepository')->willReturn($this->repository);
 
         $this->controller = new LoginController($this->em, $this->hasher, $this->validator, $this->jwtManager);
     }
@@ -60,7 +60,7 @@ class LoginControllerUnitTest extends TestCase
 
     public function testLoginValidationError(): void
     {
-        $violation = $this->createMock(ConstraintViolation::class);
+        $violation = $this->createStub(ConstraintViolation::class);
         $violation->method('getMessage')->willReturn('This value is not a valid email address.');
         $this->validator->method('validate')->willReturn(new ConstraintViolationList([$violation]));
 
