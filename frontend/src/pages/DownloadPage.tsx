@@ -75,12 +75,15 @@ export default function DownloadPage() {
     URL.revokeObjectURL(a.href)
   }
 
+  const isLoggedIn = !!localStorage.getItem('token')
+
   return (
     <Box minH="100vh" bg={BG} display="flex" flexDirection="column">
       <Flex
         px={6}
         py={3}
         align="center"
+        justify="space-between"
         bg={BG}
         borderBottom="1px solid"
         borderColor="gray.200"
@@ -88,6 +91,22 @@ export default function DownloadPage() {
         <Text fontWeight="bold" fontSize="lg" cursor="pointer" onClick={() => navigate('/')}>
           DataShare
         </Text>
+        {isLoggedIn && (
+          <Button
+            size="sm"
+            bg="transparent"
+            color={CORAL}
+            border="1px solid"
+            borderColor={CORAL}
+            borderRadius="lg"
+            px={4}
+            _hover={{ bg: '#fdf2f0' }}
+            onClick={() => navigate('/my-space')}
+            data-testid="my-space-link"
+          >
+            Mon espace
+          </Button>
+        )}
       </Flex>
 
       <Flex flex="1" align="center" justify="center" p={4}>

@@ -17,6 +17,7 @@ beforeEach(() => {
   mockNavigate.mockClear()
   vi.mocked(files.getFileMeta).mockClear()
   mockFetch.mockClear()
+  localStorage.clear()
 })
 
 function makeFileMeta(overrides: Partial<files.FileMeta> = {}): files.FileMeta {
@@ -175,6 +176,32 @@ describe('DownloadPage', () => {
     fireEvent.click(screen.getByTestId('download-button'))
 
     await waitFor(() => expect(screen.getByTestId('wrong-password')).toBeInTheDocument())
+  })
+
+  it('shows "Mon espace" link when user is logged in', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFileMeta).mockResolvedValue({ ok: true, status: 200, data: makeFileMeta() })
+    renderWithProviders(<DownloadPage />)
+
+    await waitFor(() => expect(screen.getByTestId('my-space-link')).toBeInTheDocument())
+  })
+
+  it('hides "Mon espace" link when user is not logged in', async () => {
+    vi.mocked(files.getFileMeta).mockResolvedValue({ ok: true, status: 200, data: makeFileMeta() })
+    renderWithProviders(<DownloadPage />)
+
+    await waitFor(() => expect(screen.getByTestId('file-name')).toBeInTheDocument())
+    expect(screen.queryByTestId('my-space-link')).not.toBeInTheDocument()
+  })
+
+  it('navigates to /my-space when "Mon espace" is clicked', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFileMeta).mockResolvedValue({ ok: true, status: 200, data: makeFileMeta() })
+    renderWithProviders(<DownloadPage />)
+
+    await waitFor(() => expect(screen.getByTestId('my-space-link')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('my-space-link'))
+    expect(mockNavigate).toHaveBeenCalledWith('/my-space')
   })
 
   it('navigates home when DataShare logo is clicked', async () => {
