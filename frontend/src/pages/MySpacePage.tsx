@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Box, Flex, Text, Button, HStack, VStack, Input } from '@chakra-ui/react'
+import { useEffect, useState } from 'react'
+import { Box, Flex, Text, Button, HStack, VStack } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
 import { getFiles, deleteFile, type FileRecord } from '../api/files'
 
@@ -317,12 +317,10 @@ export default function MySpacePage() {
 }
 
 function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void }) {
+  const navigate = useNavigate()
   const expiry = formatExpiry(file)
-  const [askPassword, setAskPassword] = useState(false)
-  const [password, setPassword] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   async function handleDeleteConfirmed() {
     setDeleting(true)
@@ -333,22 +331,6 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
       setDeleting(false)
       setConfirmDelete(false)
     }
-  }
-
-  function handleAccess() {
-    if (file.password_protected) {
-      setAskPassword(true)
-      setTimeout(() => inputRef.current?.focus(), 0)
-    } else {
-      window.open(file.download_url, '_blank')
-    }
-  }
-
-  function handlePasswordSubmit() {
-    const url = `${file.download_url}?password=${encodeURIComponent(password)}`
-    window.open(url, '_blank')
-    setAskPassword(false)
-    setPassword('')
   }
 
   return (
@@ -413,7 +395,7 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
               borderRadius="md"
               px={3}
               _hover={{ bg: '#fdf2f0' }}
-              onClick={handleAccess}
+              onClick={() => navigate(`/download/${file.token}`)}
               data-testid="access-button"
             >
               <HStack gap={1}>
@@ -458,43 +440,6 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
         </HStack>
       )}
 
-      {askPassword && (
-        <HStack px={4} pb={3} gap={2}>
-          <Input
-            ref={inputRef}
-            type="password"
-            placeholder="Mot de passe du fichier"
-            size="sm"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handlePasswordSubmit()}
-            borderColor="gray.200"
-            data-testid="password-input"
-          />
-          <Button
-            size="sm"
-            bg={CORAL}
-            color="white"
-            borderRadius="md"
-            flexShrink={0}
-            _hover={{ bg: '#c25a4e' }}
-            onClick={handlePasswordSubmit}
-            data-testid="password-submit"
-          >
-            Valider
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            color="gray.500"
-            flexShrink={0}
-            onClick={() => { setAskPassword(false); setPassword('') }}
-            data-testid="password-cancel"
-          >
-            Annuler
-          </Button>
-        </HStack>
-      )}
     </Box>
   )
 }

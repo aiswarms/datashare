@@ -159,53 +159,32 @@ describe('MySpacePage', () => {
     expect(screen.getByText('expired.pdf')).toBeInTheDocument()
   })
 
-  it('opens download URL directly for unprotected file', async () => {
+  it('navigates to download page when Accéder is clicked', async () => {
     localStorage.setItem('token', 'jwt')
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     vi.mocked(files.getFiles).mockResolvedValue({
       ok: true, status: 200,
-      data: { data: [makeFile({ password_protected: false })] },
+      data: { data: [makeFile({ token: 'abc-123', password_protected: false })] },
     })
     renderWithProviders(<MySpacePage />)
 
     await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('access-button'))
 
-    expect(openSpy).toHaveBeenCalledWith('/api/files/abc-123/download', '_blank')
-    expect(screen.queryByTestId('password-input')).not.toBeInTheDocument()
-    openSpy.mockRestore()
+    expect(mockNavigate).toHaveBeenCalledWith('/download/abc-123')
   })
 
-  it('shows password input when Accéder is clicked on protected file', async () => {
+  it('navigates to download page for password-protected file', async () => {
     localStorage.setItem('token', 'jwt')
     vi.mocked(files.getFiles).mockResolvedValue({
       ok: true, status: 200,
-      data: { data: [makeFile({ password_protected: true })] },
+      data: { data: [makeFile({ token: 'abc-123', password_protected: true })] },
     })
     renderWithProviders(<MySpacePage />)
 
     await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('access-button'))
 
-    expect(screen.getByTestId('password-input')).toBeInTheDocument()
-  })
-
-  it('appends password to URL on submit', async () => {
-    localStorage.setItem('token', 'jwt')
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    vi.mocked(files.getFiles).mockResolvedValue({
-      ok: true, status: 200,
-      data: { data: [makeFile({ password_protected: true })] },
-    })
-    renderWithProviders(<MySpacePage />)
-
-    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
-    fireEvent.click(screen.getByTestId('access-button'))
-    fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'secret' } })
-    fireEvent.click(screen.getByTestId('password-submit'))
-
-    expect(openSpy).toHaveBeenCalledWith('/api/files/abc-123/download?password=secret', '_blank')
-    openSpy.mockRestore()
+    expect(mockNavigate).toHaveBeenCalledWith('/download/abc-123')
   })
 
   it('clicking Supprimer shows confirmation, not delete immediately', async () => {
@@ -275,20 +254,6 @@ describe('MySpacePage', () => {
     expect(screen.getByText('keep.pdf')).toBeInTheDocument()
   })
 
-  it('hides password input after cancel', async () => {
-    localStorage.setItem('token', 'jwt')
-    vi.mocked(files.getFiles).mockResolvedValue({
-      ok: true, status: 200,
-      data: { data: [makeFile({ password_protected: true })] },
-    })
-    renderWithProviders(<MySpacePage />)
-
-    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
-    fireEvent.click(screen.getByTestId('access-button'))
-    fireEvent.click(screen.getByTestId('password-cancel'))
-
-    expect(screen.queryByTestId('password-input')).not.toBeInTheDocument()
-  })
 
   it('logout clears token and navigates to /', async () => {
     localStorage.setItem('token', 'jwt')
@@ -375,23 +340,6 @@ describe('MySpacePage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/')
   })
 
-  it('opens file download in new window on Accéder button click', async () => {
-    localStorage.setItem('token', 'jwt')
-    const windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null)
-
-    vi.mocked(files.getFiles).mockResolvedValue({
-      ok: true, status: 200,
-      data: { data: [makeFile({ download_url: '/api/files/abc-123/download' })] },
-    })
-    renderWithProviders(<MySpacePage />)
-
-    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
-
-    fireEvent.click(screen.getByTestId('access-button'))
-    expect(windowOpenSpy).toHaveBeenCalledWith('/api/files/abc-123/download', '_blank')
-
-    windowOpenSpy.mockRestore()
-  })
 
   it('shows lock icon for password protected files', async () => {
     localStorage.setItem('token', 'jwt')
@@ -532,25 +480,4 @@ describe('MySpacePage', () => {
     expect(screen.queryByText('1234567890')).not.toBeInTheDocument()
   })
 
-  it('submits password form on Enter key press', async () => {
-    localStorage.setItem('token', 'jwt')
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    vi.mocked(files.getFiles).mockResolvedValue({
-      ok: true, status: 200,
-      data: { data: [makeFile({ password_protected: true })] },
-    })
-    renderWithProviders(<MySpacePage />)
-
-    await waitFor(() => expect(screen.getByTestId('access-button')).toBeInTheDocument())
-    fireEvent.click(screen.getByTestId('access-button'))
-
-    const passwordInput = screen.getByTestId('password-input') as HTMLInputElement
-    fireEvent.change(passwordInput, { target: { value: 'mypassword' } })
-
-    // Simulate Enter key press
-    fireEvent.keyDown(passwordInput, { key: 'Enter', code: 'Enter' })
-
-    expect(openSpy).toHaveBeenCalledWith('/api/files/abc-123/download?password=mypassword', '_blank')
-    openSpy.mockRestore()
-  })
 })
