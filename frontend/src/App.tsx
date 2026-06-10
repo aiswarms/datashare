@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import UploadPage from './pages/UploadPage'
 import MySpacePage from './pages/MySpacePage'
+import DownloadPage from './pages/DownloadPage'
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/my-space" element={<MySpacePage />} />
+        <Route path="/download/:token" element={<DownloadPage />} />
       </Routes>
     </BrowserRouter>
   )

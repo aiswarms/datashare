@@ -68,7 +68,7 @@ export default function UploadPage() {
     const { ok, data } = await uploadFile(file, expiresInDays, password || undefined)
     setLoading(false)
     if (ok) {
-      setDownloadUrl(`${window.location.origin}${data.download_url}`)
+      setDownloadUrl(`${window.location.origin}/download/${data.token}`)
     } else {
       setError(data.message ?? 'Une erreur est survenue')
     }

@@ -23,6 +23,7 @@ security:
         - { path: ^/api/health, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api/files/[^/]+/download$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/files/[^/]+$, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/api, roles: ROLE_USER }
 
 when@test:
