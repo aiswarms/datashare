@@ -65,8 +65,13 @@ export default function UploadPage() {
     if (!file || sizeError) return
     setLoading(true)
     setError('')
-    const { ok, data } = await uploadFile(file, expiresInDays, password || undefined)
+    const { ok, status, data } = await uploadFile(file, expiresInDays, password || undefined)
     setLoading(false)
+    if (status === 401) {
+      localStorage.removeItem('token')
+      navigate('/login')
+      return
+    }
     if (ok) {
       setDownloadUrl(`${window.location.origin}/download/${data.token}`)
     } else {

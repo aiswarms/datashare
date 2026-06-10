@@ -83,7 +83,12 @@ export default function MySpacePage() {
       navigate('/login')
       return
     }
-    getFiles().then(({ ok, data }) => {
+    getFiles().then(({ ok, status, data }) => {
+      if (status === 401) {
+        localStorage.removeItem('token')
+        navigate('/login')
+        return
+      }
       if (ok) setFiles(data.data)
       setLoading(false)
     })
@@ -324,7 +329,12 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
 
   async function handleDeleteConfirmed() {
     setDeleting(true)
-    const { ok } = await deleteFile(file.id)
+    const { ok, status } = await deleteFile(file.id)
+    if (status === 401) {
+      localStorage.removeItem('token')
+      navigate('/login')
+      return
+    }
     if (ok) {
       onDelete()
     } else {

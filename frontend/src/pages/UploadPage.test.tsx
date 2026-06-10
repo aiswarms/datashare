@@ -100,4 +100,21 @@ describe('UploadPage', () => {
 
     await waitFor(() => expect(screen.getByText('File type not allowed')).toBeInTheDocument())
   })
+
+  it('redirects to /login and clears token when upload returns 401', async () => {
+    localStorage.setItem('token', 'expired-jwt')
+    vi.mocked(files.uploadFile).mockResolvedValue({
+      ok: false,
+      status: 401,
+      data: { message: 'Unauthorized' },
+    })
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile()] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Téléverser' }))
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/login'))
+    expect(localStorage.getItem('token')).toBeNull()
+  })
 })

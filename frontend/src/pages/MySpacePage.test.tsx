@@ -49,6 +49,32 @@ describe('MySpacePage', () => {
     expect(mockNavigate).not.toHaveBeenCalledWith('/login')
   })
 
+  it('redirects to /login and clears token when getFiles returns 401', async () => {
+    localStorage.setItem('token', 'expired-jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: false, status: 401, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/login'))
+    expect(localStorage.getItem('token')).toBeNull()
+  })
+
+  it('redirects to /login when deleteFile returns 401', async () => {
+    localStorage.setItem('token', 'expired-jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1 })] },
+    })
+    vi.mocked(files.deleteFile).mockResolvedValue({ ok: false, status: 401 })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('delete-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('delete-button'))
+    fireEvent.click(screen.getByTestId('confirm-delete-button'))
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/login'))
+    expect(localStorage.getItem('token')).toBeNull()
+  })
+
   it('shows loading then empty state', async () => {
     localStorage.setItem('token', 'jwt')
     vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
