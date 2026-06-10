@@ -45,6 +45,19 @@ services:
     depends_on:
       - api
 
+  worker:
+    build:
+      context: ./api
+    restart: unless-stopped
+    volumes:
+      - ./api:/app
+    environment:
+      DATABASE_URL: postgresql://datashare:datashare@db:5432/datashare
+    depends_on:
+      - db
+      - minio
+    command: sh -c "while true; do php bin/console app:purge-expired; sleep 3600; done"
+
   nginx:
     image: nginx:alpine
     restart: unless-stopped
