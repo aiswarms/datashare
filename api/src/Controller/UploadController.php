@@ -61,6 +61,14 @@ class UploadController
             return new JsonResponse(['error' => 'VALIDATION_ERROR', 'message' => 'File is required'], Response::HTTP_BAD_REQUEST);
         }
 
+        if (!$uploadedFile->isValid()) {
+            $code = $uploadedFile->getError();
+            $message = \UPLOAD_ERR_INI_SIZE === $code || \UPLOAD_ERR_FORM_SIZE === $code
+                ? 'File exceeds the maximum allowed size'
+                : 'File upload failed';
+            return new JsonResponse(['error' => 'UPLOAD_ERROR', 'message' => $message], Response::HTTP_BAD_REQUEST);
+        }
+
         if ($uploadedFile->getSize() > self::MAX_SIZE) {
             return new JsonResponse(['error' => 'FILE_TOO_LARGE', 'message' => 'File exceeds 1 GB'], Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
         }
