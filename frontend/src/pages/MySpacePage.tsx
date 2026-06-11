@@ -77,6 +77,8 @@ export default function MySpacePage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('all')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [allTags, setAllTags] = useState<string[]>([])
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -89,10 +91,24 @@ export default function MySpacePage() {
         navigate('/login')
         return
       }
-      if (ok) setFiles(data.data)
+      if (ok) {
+        setFiles(data.data)
+        setAllTags([...new Set(data.data.flatMap(f => f.tags))].sort())
+      }
       setLoading(false)
     })
   }, [navigate])
+
+  async function handleTagFilter(tag: string | null) {
+    setSelectedTag(tag)
+    const { ok, status, data } = await getFiles(tag ?? undefined)
+    if (status === 401) {
+      localStorage.removeItem('token')
+      navigate('/login')
+      return
+    }
+    if (ok) setFiles(data.data)
+  }
 
   function handleLogout() {
     localStorage.removeItem('token')
@@ -226,6 +242,49 @@ export default function MySpacePage() {
               </Box>
             ))}
           </Box>
+
+          {/* Tag filter chips */}
+          {allTags.length > 0 && (
+            <HStack gap={2} mb={4} flexWrap="wrap">
+              {allTags.map(tag => (
+                <Box
+                  key={tag}
+                  as="button"
+                  px={3}
+                  py={1}
+                  fontSize="xs"
+                  borderRadius="full"
+                  border="1px solid"
+                  borderColor={selectedTag === tag ? CORAL : 'gray.300'}
+                  bg={selectedTag === tag ? CORAL : 'white'}
+                  color={selectedTag === tag ? 'white' : 'gray.600'}
+                  cursor="pointer"
+                  onClick={() => handleTagFilter(selectedTag === tag ? null : tag)}
+                  data-testid={`tag-chip-${tag}`}
+                >
+                  {tag}
+                </Box>
+              ))}
+              {selectedTag && (
+                <Box
+                  as="button"
+                  px={3}
+                  py={1}
+                  fontSize="xs"
+                  borderRadius="full"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  bg="white"
+                  color="gray.400"
+                  cursor="pointer"
+                  onClick={() => handleTagFilter(null)}
+                  data-testid="clear-tag-filter"
+                >
+                  Effacer
+                </Box>
+              )}
+            </HStack>
+          )}
 
           {/* File list */}
           {loading ? (

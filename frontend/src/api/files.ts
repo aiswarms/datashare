@@ -30,9 +30,10 @@ export interface FileRecord {
   tags: string[]
 }
 
-export async function getFiles() {
+export async function getFiles(tag?: string) {
   const token = localStorage.getItem('token')
-  const res = await fetch(`${BASE}/files`, {
+  const url = tag ? `${BASE}/files?tag=${encodeURIComponent(tag)}` : `${BASE}/files`
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token ?? ''}` },
   })
   return { ok: res.ok, status: res.status, data: await res.json() as { data: FileRecord[] } }

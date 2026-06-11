@@ -473,6 +473,73 @@ describe('MySpacePage', () => {
     expect(screen.getByTestId('empty')).toBeInTheDocument()
   })
 
+  it('shows tag chips when files have tags', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ tags: ['invoice', 'report'] })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('tag-chip-invoice')).toBeInTheDocument())
+    expect(screen.getByTestId('tag-chip-report')).toBeInTheDocument()
+  })
+
+  it('does not show tag chips when no files have tags', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ tags: [] })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('file-row')).toBeInTheDocument())
+    expect(screen.queryByTestId(/tag-chip/)).not.toBeInTheDocument()
+  })
+
+  it('clicking a tag chip calls getFiles with that tag', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles)
+      .mockResolvedValueOnce({ ok: true, status: 200, data: { data: [makeFile({ tags: ['invoice'] })] } })
+      .mockResolvedValueOnce({ ok: true, status: 200, data: { data: [makeFile({ tags: ['invoice'] })] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('tag-chip-invoice')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('tag-chip-invoice'))
+
+    await waitFor(() => expect(files.getFiles).toHaveBeenCalledWith('invoice'))
+  })
+
+  it('clicking active tag chip deselects and calls getFiles without tag', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles)
+      .mockResolvedValue({ ok: true, status: 200, data: { data: [makeFile({ tags: ['invoice'] })] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('tag-chip-invoice')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('tag-chip-invoice'))
+    await waitFor(() => expect(files.getFiles).toHaveBeenCalledWith('invoice'))
+
+    fireEvent.click(screen.getByTestId('tag-chip-invoice'))
+    await waitFor(() => expect(files.getFiles).toHaveBeenCalledWith(undefined))
+  })
+
+  it('shows clear button when a tag is selected and hides it when deselected', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles)
+      .mockResolvedValue({ ok: true, status: 200, data: { data: [makeFile({ tags: ['invoice'] })] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('tag-chip-invoice')).toBeInTheDocument())
+    expect(screen.queryByTestId('clear-tag-filter')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('tag-chip-invoice'))
+    await waitFor(() => expect(screen.getByTestId('clear-tag-filter')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByTestId('clear-tag-filter'))
+    await waitFor(() => expect(screen.queryByTestId('clear-tag-filter')).not.toBeInTheDocument())
+  })
+
   it('handles getFiles with ok: false', async () => {
     localStorage.setItem('token', 'jwt')
     vi.mocked(files.getFiles).mockResolvedValue({

@@ -9,6 +9,7 @@ use App\Entity\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -271,6 +272,38 @@ class FileHistoryControllerUnitTest extends TestCase
         $this->assertCount(2, $fileData['tags']);
         $this->assertContains('important', $fileData['tags']);
         $this->assertContains('project-a', $fileData['tags']);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testFilterByTagReturnsMatchingFiles(): void
+    {
+        $user = $this->createStub(User::class);
+
+        $query = $this->createStub(\Doctrine\ORM\Query::class);
+        $query->method('getResult')->willReturn([]);
+
+        $qb = $this->createStub(\Doctrine\ORM\QueryBuilder::class);
+        $qb->method('join')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('orderBy')->willReturnSelf();
+        $qb->method('addOrderBy')->willReturnSelf();
+        $qb->method('setParameter')->willReturnSelf();
+        $qb->method('getQuery')->willReturn($query);
+
+        $repository = $this->createStub(\Doctrine\ORM\EntityRepository::class);
+        $repository->method('createQueryBuilder')->willReturn($qb);
+
+        $this->em->expects($this->once())
+            ->method('getRepository')
+            ->with(File::class)
+            ->willReturn($repository);
+
+        $response = $this->controller->__invoke($this->em, $user, 'invoice');
+
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $data = json_decode($response->getContent(), true);
+        $this->assertSame([], $data['data']);
     }
 
     public function testResponseHeaderAndStatusCode(): void

@@ -183,6 +183,47 @@ class FileHistoryControllerTest extends WebTestCase
         $this->assertTrue($data[0]['password_protected']);
     }
 
+    public function testFilterByTagReturnsMatchingFiles(): void
+    {
+        $this->register('history@test.com');
+        $jwt = $this->login('history@test.com');
+
+        $this->client->request(
+            'POST', '/api/files',
+            ['tags' => ['invoice']],
+            ['file' => $this->makeFile('invoice.txt')],
+            ['HTTP_AUTHORIZATION' => "Bearer $jwt"]
+        );
+
+        $this->client->request(
+            'POST', '/api/files',
+            ['tags' => ['report']],
+            ['file' => $this->makeFile('report.txt')],
+            ['HTTP_AUTHORIZATION' => "Bearer $jwt"]
+        );
+
+        $this->client->request('GET', '/api/files?tag=invoice', [], [], ['HTTP_AUTHORIZATION' => "Bearer $jwt"]);
+
+        $this->assertResponseStatusCodeSame(200);
+        $data = json_decode($this->client->getResponse()->getContent(), true)['data'];
+        $this->assertCount(1, $data);
+        $this->assertSame('invoice.txt', $data[0]['original_name']);
+    }
+
+    public function testFilterByTagReturnsEmptyWhenNoMatch(): void
+    {
+        $this->register('history@test.com');
+        $jwt = $this->login('history@test.com');
+
+        $this->upload($jwt, 'test.txt');
+
+        $this->client->request('GET', '/api/files?tag=nonexistent', [], [], ['HTTP_AUTHORIZATION' => "Bearer $jwt"]);
+
+        $this->assertResponseStatusCodeSame(200);
+        $data = json_decode($this->client->getResponse()->getContent(), true)['data'];
+        $this->assertSame([], $data);
+    }
+
     public function testTagsAppearsInHistory(): void
     {
         $this->register('history@test.com');

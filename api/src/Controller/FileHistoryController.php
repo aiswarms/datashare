@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
@@ -28,11 +29,26 @@ class FileHistoryController
     public function __invoke(
         EntityManagerInterface $em,
         #[CurrentUser] User $user,
+        #[MapQueryParameter] ?string $tag = null,
     ): JsonResponse {
-        $files = $em->getRepository(File::class)->findBy(
-            ['user' => $user],
-            ['uploadedAt' => 'DESC', 'id' => 'DESC']
-        );
+        if ($tag !== null) {
+            $files = $em->getRepository(File::class)
+                ->createQueryBuilder('f')
+                ->join('f.tags', 't')
+                ->where('f.user = :user')
+                ->andWhere('t.name = :tag')
+                ->orderBy('f.uploadedAt', 'DESC')
+                ->addOrderBy('f.id', 'DESC')
+                ->setParameter('user', $user)
+                ->setParameter('tag', $tag)
+                ->getQuery()
+                ->getResult();
+        } else {
+            $files = $em->getRepository(File::class)->findBy(
+                ['user' => $user],
+                ['uploadedAt' => 'DESC', 'id' => 'DESC']
+            );
+        }
 
         $now = new \DateTimeImmutable();
 
