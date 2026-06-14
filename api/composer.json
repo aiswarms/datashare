@@ -12,7 +12,6 @@
         "doctrine/doctrine-migrations-bundle": "*",
         "doctrine/orm": "*",
         "lexik/jwt-authentication-bundle": "^3.2",
-        "symfony/monolog-bundle": "^3.0",
         "nelmio/api-doc-bundle": "^5.10",
         "symfony/asset": "8.1.*",
         "symfony/console": "8.1.*",
