@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+
+  frontend:
+    name: Frontend — tests & coverage
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run coverage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+
+  backend:
+    name: Backend — tests & coverage
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: datashare
+          POSTGRES_USER: datashare
+          POSTGRES_PASSWORD: datashare
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, intl, pcov
+          coverage: pcov
+
+      - run: composer install --no-interaction --prefer-dist
+
+      - name: Run migrations
+        run: php bin/console doctrine:migrations:migrate --no-interaction
+        env:
+          APP_ENV: test
+          DATABASE_URL: postgresql://datashare:datashare@127.0.0.1:5432/datashare?serverVersion=16&charset=utf8
+
+      - name: Run tests with coverage
+        run: php vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
+        env:
+          DATABASE_URL: postgresql://datashare:datashare@127.0.0.1:5432/datashare?serverVersion=16&charset=utf8
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: api/coverage.xml
