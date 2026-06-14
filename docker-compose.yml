@@ -56,7 +56,7 @@ services:
     depends_on:
       - db
       - minio
-    command: sh -c "while true; do php bin/console app:purge-expired; sleep 3600; done"
+    command: sh -c "until pg_isready -h db -p 5432 -U datashare -q; do sleep 1; done && while true; do php bin/console app:purge-expired; sleep 3600; done"
 
   nginx:
     image: nginx:alpine

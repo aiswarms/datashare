@@ -2,7 +2,7 @@ FROM php:8.4-cli
 
 # Extensions requises par Symfony + API Platform + PostgreSQL
 RUN apt-get update && apt-get install -y \
-    git unzip libpq-dev libicu-dev \
+    git unzip libpq-dev libicu-dev postgresql-client \
     && docker-php-ext-install pdo pdo_pgsql intl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -18,7 +18,10 @@ COPY . .
 RUN composer dump-autoload --optimize
 
 COPY php.ini /usr/local/etc/php/conf.d/uploads.ini
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
