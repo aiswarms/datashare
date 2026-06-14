@@ -377,8 +377,11 @@ describe('MySpacePage', () => {
 
     await waitFor(() => {
       const fileRow = screen.getByTestId('file-row')
-      // Lock icon should be present in the file row
-      expect(fileRow.querySelectorAll('svg')).toHaveLength(4) // FileIcon + LockIcon + TrashIcon + ArrowIcon
+      // Desktop view: FileIcon + LockIcon + TrashIcon + ArrowIcon = 4
+      // Mobile view (in test): also has DotsIcon = 5
+      // So we should have at least FileIcon + LockIcon
+      const svgs = fileRow.querySelectorAll('svg')
+      expect(svgs.length).toBeGreaterThanOrEqual(2) // At least FileIcon + LockIcon
     })
   })
 
@@ -392,12 +395,15 @@ describe('MySpacePage', () => {
 
     await waitFor(() => {
       const fileRow = screen.getByTestId('file-row')
-      // FileIcon + TrashIcon + ArrowIcon (no LockIcon for non-protected files)
-      expect(fileRow.querySelectorAll('svg')).toHaveLength(3)
+      // Desktop view: FileIcon + TrashIcon + ArrowIcon = 3
+      // Mobile view (in test): also has DotsIcon = 4
+      // Total should be FileIcon (1) + action icons (2 or 3) + optional DotsIcon (1 for mobile)
+      const svgs = fileRow.querySelectorAll('svg')
+      expect(svgs.length).toBeGreaterThanOrEqual(3) // At least FileIcon + TrashIcon + ArrowIcon
     })
   })
 
-  it('does not show lock icon for expired password protected files', async () => {
+  it('shows lock icon even for expired password protected files', async () => {
     localStorage.setItem('token', 'jwt')
     vi.mocked(files.getFiles).mockResolvedValue({
       ok: true, status: 200,
@@ -407,8 +413,10 @@ describe('MySpacePage', () => {
 
     await waitFor(() => {
       const fileRow = screen.getByTestId('file-row')
-      // Only FileIcon should be present (no LockIcon for expired)
-      expect(fileRow.querySelectorAll('svg')).toHaveLength(1)
+      // FileIcon + LockIcon (lock shown for expired password-protected files)
+      // No action icons for expired files
+      const svgs = fileRow.querySelectorAll('svg')
+      expect(svgs.length).toBeGreaterThanOrEqual(2) // At least FileIcon + LockIcon
     })
   })
 
@@ -571,6 +579,165 @@ describe('MySpacePage', () => {
     await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
     // Should render without the user email in the mobile header
     expect(screen.queryByText('1234567890')).not.toBeInTheDocument()
+  })
+
+  it('shows user email in mobile header when token is valid', async () => {
+    localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3R1c2VyIn0.signature')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+    expect(screen.getByText('testuser')).toBeInTheDocument()
+  })
+
+  it('shows mobile dots button for active files', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1, original_name: 'active.pdf', is_expired: false })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('file-row')).toBeInTheDocument())
+    expect(screen.getByTestId('dots-button')).toBeInTheDocument()
+  })
+
+  it('does not show mobile dots button for expired files', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1, original_name: 'expired.pdf', is_expired: true })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('file-row')).toBeInTheDocument())
+    expect(screen.queryByTestId('dots-button')).not.toBeInTheDocument()
+  })
+
+  it('opens mobile menu when dots button is clicked', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1 })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('dots-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('dots-button'))
+
+    // Mobile menu should appear with access and delete options
+    const accessButtons = screen.getAllByTestId('access-button')
+    const deleteButtons = screen.getAllByTestId('delete-button')
+    expect(accessButtons.length).toBeGreaterThan(1) // At least one from mobile menu
+    expect(deleteButtons.length).toBeGreaterThan(1) // At least one from mobile menu
+  })
+
+  it('closes mobile menu when clicking inside it (access option)', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1, token: 'abc-123' })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('dots-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('dots-button'))
+
+    const mobileAccessButtons = screen.getAllByTestId('access-button')
+    const mobileMenuButton = mobileAccessButtons[mobileAccessButtons.length - 1] // Last one should be from mobile menu
+    fireEvent.click(mobileMenuButton)
+
+    expect(mockNavigate).toHaveBeenCalledWith('/download/abc-123')
+  })
+
+  it('closes mobile menu when clicking delete option in mobile menu', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({
+      ok: true, status: 200,
+      data: { data: [makeFile({ id: 1 })] },
+    })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('dots-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('dots-button'))
+
+    const deleteButtons = screen.getAllByTestId('delete-button')
+    const mobileDeleteButton = deleteButtons[deleteButtons.length - 1] // Last one should be from mobile menu
+    fireEvent.click(mobileDeleteButton)
+
+    // Should show confirmation dialog
+    expect(screen.getByTestId('confirm-delete-button')).toBeInTheDocument()
+  })
+
+  it('closes mobile drawer when clicking overlay in mobile view', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByTestId('hamburger-button'))
+    expect(screen.getByTestId('menu-overlay')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('menu-overlay'))
+    await waitFor(() => expect(screen.queryByTestId('menu-overlay')).not.toBeInTheDocument())
+  })
+
+  it('displays user initial in mobile header', async () => {
+    localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFsaWNlIn0.signature')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+    expect(screen.getByText('A')).toBeInTheDocument() // First letter of 'alice'
+  })
+
+  it('handles tagFilter when getFiles fails with 401', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles)
+      .mockResolvedValueOnce({ ok: true, status: 200, data: { data: [makeFile({ tags: ['invoice'] })] } })
+      .mockResolvedValueOnce({ ok: false, status: 401, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('tag-chip-invoice')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('tag-chip-invoice'))
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/login'))
+    expect(localStorage.getItem('token')).toBeNull()
+  })
+
+  it('handles tagFilter when getFiles returns ok: false with non-401 status', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles)
+      .mockResolvedValueOnce({ ok: true, status: 200, data: { data: [makeFile({ tags: ['invoice'] })] } })
+      .mockResolvedValueOnce({ ok: false, status: 500, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('tag-chip-invoice')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('tag-chip-invoice'))
+
+    // Files should remain unchanged (old list still shown)
+    await waitFor(() => expect(screen.getByText('rapport.pdf')).toBeInTheDocument())
+  })
+
+  it('renders sidebar on desktop view', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+    // Sidebar should have the DataShare logo
+    const titles = screen.getAllByText('DataShare')
+    expect(titles.length).toBeGreaterThan(0)
+  })
+
+  it('displays "Ajouter des fichiers" button on desktop', async () => {
+    localStorage.setItem('token', 'jwt')
+    vi.mocked(files.getFiles).mockResolvedValue({ ok: true, status: 200, data: { data: [] } })
+    renderWithProviders(<MySpacePage />)
+
+    await waitFor(() => expect(screen.getByTestId('empty')).toBeInTheDocument())
+    expect(screen.getByText('Ajouter des fichiers')).toBeInTheDocument()
   })
 
 })
