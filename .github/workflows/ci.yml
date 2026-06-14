@@ -64,6 +64,12 @@ jobs:
 
       - run: composer install --no-interaction --prefer-dist
 
+      - name: Generate JWT keys
+        run: php bin/console lexik:jwt:generate-keypair --overwrite
+        env:
+          APP_ENV: test
+          JWT_PASSPHRASE: changeme
+
       - name: Run migrations
         run: php bin/console doctrine:migrations:migrate --no-interaction
         env:
