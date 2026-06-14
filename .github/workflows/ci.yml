@@ -42,7 +42,7 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: datashare
+          POSTGRES_DB: datashare_test
           POSTGRES_USER: datashare
           POSTGRES_PASSWORD: datashare
         options: >-
