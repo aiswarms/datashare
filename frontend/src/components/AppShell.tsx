@@ -22,11 +22,13 @@ export default function AppShell({ children, showLoginButton = true }: AppShellP
         py={4}
         justify="space-between"
         align="center"
+        bg="white"
+        boxShadow="sm"
       >
         <Text
           fontWeight="bold"
           fontSize="lg"
-          color="white"
+          color="gray.800"
           cursor="pointer"
           onClick={() => navigate('/')}
         >
