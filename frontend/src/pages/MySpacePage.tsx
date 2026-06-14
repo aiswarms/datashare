@@ -15,7 +15,6 @@ function formatExpiry(file: FileRecord): string {
   return `Expire dans ${daysLeft} jours`
 }
 
-
 const FileIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -66,7 +65,6 @@ export default function MySpacePage() {
   const [files, setFiles] = useState<FileRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('all')
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
@@ -110,23 +108,56 @@ export default function MySpacePage() {
   )
 
   return (
-    <Box minH="100vh" bg={BG} display="flex" flexDirection="column">
-      {/* Header */}
-      <Flex
-        px={6}
-        py={3}
-        align="center"
-        justify="space-between"
-        bg={BG}
-        borderBottom="1px solid"
-        borderColor="gray.200"
+    <Box minH="100vh" display="flex">
+      {/* Sidebar */}
+      <Box
+        w="220px"
+        flexShrink={0}
+        style={{ background: SIDEBAR_GRADIENT }}
+        display="flex"
+        flexDirection="column"
+        minH="100vh"
       >
-        <Text fontWeight="bold" fontSize="lg" cursor="pointer" onClick={() => navigate('/')}>
+        <Text
+          fontWeight="bold"
+          fontSize="xl"
+          color="white"
+          px={5}
+          pt={6}
+          pb={6}
+          cursor="pointer"
+          onClick={() => navigate('/')}
+        >
           DataShare
         </Text>
 
-        {/* Desktop actions */}
-        <HStack gap={3} display={{ base: 'none', md: 'flex' }}>
+        <Box px={3}>
+          <Box
+            px={4}
+            py={2}
+            style={{ background: 'rgba(255,255,255,0.25)' }}
+            color="white"
+            borderRadius="full"
+            fontSize="sm"
+            fontWeight="medium"
+            textAlign="center"
+            cursor="pointer"
+          >
+            Mes fichiers
+          </Box>
+        </Box>
+
+        <Box flex="1" />
+
+        <Text color="whiteAlpha.700" fontSize="xs" px={5} pb={5}>
+          Copyright DataShare® 2025
+        </Text>
+      </Box>
+
+      {/* Main area */}
+      <Box flex="1" bg={BG} display="flex" flexDirection="column">
+        {/* Top bar */}
+        <Flex px={8} py={4} justify="flex-end" align="center" gap={4} bg={BG}>
           <Button
             size="sm"
             bg="gray.900"
@@ -138,100 +169,54 @@ export default function MySpacePage() {
           >
             Ajouter des fichiers
           </Button>
-          <Button
-            size="sm"
-            bg="transparent"
-            color={CORAL}
-            border="1px solid"
-            borderColor={CORAL}
-            borderRadius="lg"
-            px={4}
-            _hover={{ bg: '#fdf2f0' }}
-            onClick={handleLogout}
-            data-testid="logout-button"
-          >
-            <HStack gap={1.5}>
-              <LogoutIcon />
-              <span>Déconnexion</span>
-            </HStack>
-          </Button>
-        </HStack>
-
-        {/* Mobile hamburger */}
-        <Box
-          cursor="pointer"
-          display={{ base: 'block', md: 'none' }}
-          onClick={() => setMobileMenuOpen(true)}
-          data-testid="hamburger-button"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </Box>
-      </Flex>
-
-      <Flex flex="1">
-        {/* Sidebar — desktop */}
-        <Box
-          display={{ base: 'none', md: 'block' }}
-          w="200px"
-          flexShrink={0}
-          p={4}
-          style={{ background: SIDEBAR_GRADIENT }}
-        >
           <Box
-            px={4}
-            py={2}
-            style={{ background: 'rgba(255,255,255,0.25)' }}
-            color="white"
-            borderRadius="full"
+            as="button"
+            display="flex"
+            alignItems="center"
+            gap="6px"
+            color={CORAL}
             fontSize="sm"
             fontWeight="medium"
-            textAlign="center"
+            cursor="pointer"
+            onClick={handleLogout}
+            data-testid="logout-button"
+            _hover={{ opacity: 0.8 }}
           >
-            Mes fichiers
+            <LogoutIcon />
+            <span>Déconnexion</span>
           </Box>
-        </Box>
+        </Flex>
 
-        {/* Main content */}
-        <Box flex="1" p={{ base: 4, md: 8 }}>
-          <Text fontSize="2xl" fontWeight="bold" mb={6}>
+        {/* Content */}
+        <Box px={8} pb={8} flex="1">
+          <Text fontSize="2xl" fontWeight="bold" mb={5}>
             Mes fichiers
           </Text>
 
-          {/* Tabs — segmented control */}
-          <Box
-            display="inline-flex"
-            border="1px solid"
-            borderColor="gray.200"
-            borderRadius="md"
-            overflow="hidden"
-            mb={6}
-          >
-            {TABS.map(({ key, label }, i) => (
+          {/* Tabs */}
+          <HStack gap={2} mb={6}>
+            {TABS.map(({ key, label }) => (
               <Box
                 key={key}
                 as="button"
-                px={5}
+                px={4}
                 py={1.5}
                 fontSize="sm"
                 fontWeight={tab === key ? 'semibold' : 'normal'}
                 cursor="pointer"
+                borderRadius="full"
                 bg={tab === key ? CORAL : 'transparent'}
                 color={tab === key ? 'white' : 'gray.700'}
-                borderLeft={i > 0 ? '1px solid' : 'none'}
-                borderColor="gray.200"
+                border={tab === key ? 'none' : '1px solid'}
+                borderColor="gray.300"
                 onClick={() => setTab(key)}
                 data-testid={`tab-${key}`}
-                _hover={{ bg: tab === key ? '#c25a4e' : 'gray.50' }}
                 transition="background 0.15s"
               >
                 {label}
               </Box>
             ))}
-          </Box>
+          </HStack>
 
           {/* Tag filter chips */}
           {allTags.length > 0 && (
@@ -293,79 +278,7 @@ export default function MySpacePage() {
             </VStack>
           )}
         </Box>
-      </Flex>
-
-      {/* Mobile menu overlay */}
-      {mobileMenuOpen && (
-        <>
-          <Box
-            position="fixed"
-            inset={0}
-            bg="blackAlpha.500"
-            zIndex={10}
-            onClick={() => setMobileMenuOpen(false)}
-            data-testid="menu-overlay"
-          />
-          <Box
-            position="fixed"
-            top={0}
-            left={0}
-            bottom={0}
-            w="240px"
-            zIndex={20}
-            p={4}
-            style={{ background: SIDEBAR_GRADIENT }}
-          >
-            <Flex justify="space-between" align="center" mb={6}>
-              <Text fontWeight="bold" fontSize="md" color="white">DataShare</Text>
-              <Box
-                cursor="pointer"
-                onClick={() => setMobileMenuOpen(false)}
-                data-testid="close-menu-button"
-                color="white"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </Box>
-            </Flex>
-            <Box
-              px={4} py={2}
-              style={{ background: 'rgba(255,255,255,0.25)' }}
-              color="white"
-              borderRadius="full"
-              fontSize="sm"
-              fontWeight="medium"
-              textAlign="center"
-              mb={4}
-            >
-              Mes fichiers
-            </Box>
-            <Button
-              w="full"
-              size="sm"
-              bg="transparent"
-              color="white"
-              justifyContent="flex-start"
-              onClick={handleLogout}
-            >
-              <HStack gap={1.5}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                <span>Déconnexion</span>
-              </HStack>
-            </Button>
-          </Box>
-        </>
-      )}
-
-      <Text textAlign="center" color="gray.400" fontSize="xs" py={4}>
-        Copyright DataShare® 2025
-      </Text>
+      </Box>
     </Box>
   )
 }
@@ -424,7 +337,7 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
 
         {file.is_expired ? (
           <Text fontSize="sm" color="gray.400" display={{ base: 'none', md: 'block' }}>
-            Ce fichier à expiré, il n'est plus stocké chez nous
+            Ce fichier a expiré, il n'est plus stocké chez nous
           </Text>
         ) : (
           <HStack gap={2} flexShrink={0}>
@@ -498,7 +411,6 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
           </Button>
         </HStack>
       )}
-
     </Box>
   )
 }
