@@ -101,18 +101,27 @@ dist/assets/index-Dwe-6roa.js  514.33 kB │ gzip: 143.63 kB
 
 ### Métriques navigateur (Lighthouse)
 
-Seuils cibles définis pour l'application :
+Analyse effectuée le 2026-06-14 sur `http://localhost/my-space` (Lighthouse 13.0.2, Chrome 148, machine locale).
 
-| Métrique | Seuil cible |
-|----------|------------|
-| First Contentful Paint (FCP) | < 1,5 s |
-| Largest Contentful Paint (LCP) | < 2,5 s |
-| Time to Interactive (TTI) | < 3,5 s |
-| Total Blocking Time (TBT) | < 200 ms |
-| Cumulative Layout Shift (CLS) | < 0,1 |
+| Métrique | Valeur mesurée | Seuil cible | Statut |
+|----------|----------------|-------------|--------|
+| First Contentful Paint (FCP) | **2,2 s** | < 1,5 s | ⚠️ |
+| Largest Contentful Paint (LCP) | **3,9 s** | < 2,5 s | ❌ |
+| Time to Interactive (TTI) | **3,9 s** | < 3,5 s | ⚠️ |
+| Total Blocking Time (TBT) | **0 ms** | < 200 ms | ✅ |
+| Cumulative Layout Shift (CLS) | **0,003** | < 0,1 | ✅ |
+| Speed Index | **2,2 s** | — | — |
 
-Lancer l'analyse Lighthouse (stack Docker requise) :
+**Scores Lighthouse globaux :**
 
+| Catégorie | Score |
+|-----------|-------|
+| Performance | 67 / 100 |
+| Accessibility | 85 / 100 |
+| Best Practices | 100 / 100 |
+| SEO | 82 / 100 |
+
+Lancer l'analyse Lighthouse :
 ```bash
 # Via Chrome DevTools → Lighthouse → Generate report
 # Ou en CLI :
@@ -125,11 +134,11 @@ npx lighthouse http://localhost --output html --output-path ./lighthouse-report.
 
 ### Observations
 
-**Bundle monolithique** : le bundle unique de 514 kB brut est la principale limite. Vite le signale lui-même avec un warning. La cause principale est l'absence de code splitting : toutes les routes (HomePage, UploadPage, DownloadPage, MySpacePage) sont chargées en une seule fois.
+**FCP et LCP au-dessus des seuils** : les métriques Lighthouse confirment que le rendu initial est trop lent (FCP 2,2 s, LCP 3,9 s). La cause est directement liée au **bundle monolithique de 514 kB brut** : le navigateur doit télécharger, parser et exécuter l'intégralité du JS avant d'afficher quoi que ce soit. Le score Performance de 67/100 reflète cet impact.
+
+**TBT et CLS excellents** : une fois le JS exécuté, l'application ne bloque pas le thread principal (TBT = 0 ms) et n'a aucun décalage de mise en page (CLS = 0,003). Le problème est uniquement le **chargement initial**, pas l'interactivité.
 
 **Dépendances lourdes** : Chakra UI v3 et ses dépendances (`@emotion`, `framer-motion`) représentent la majorité du poids. React Router ajoute également quelques kB.
-
-**Points positifs** : la compression gzip ramène le poids à 143 kB, ce qui est acceptable pour une application SPA de cette nature. Les images et assets statiques sont inexistants (UI 100% composants).
 
 ### Actions d'optimisation possibles
 
