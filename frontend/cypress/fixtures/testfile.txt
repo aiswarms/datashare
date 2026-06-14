@@ -1,0 +1,2 @@
+DataShare E2E test fixture file.
+Used by Cypress tests to simulate file uploads.
