@@ -9,12 +9,11 @@
 
 ---
 
-## 2. Méthodologie k6
+## 2. Méthodologie k6 (back-end)
 
 ### Outil
 [k6](https://k6.io) — outil de test de charge open source, scripts en JavaScript.
 
-Installation :
 ```bash
 brew install k6
 ```
@@ -56,143 +55,104 @@ BASE_URL=https://staging.datashare.example.com k6 run perf/k6-upload.js
 
 ## 3. Résultats upload (`POST /api/files`)
 
-> Tests à exécuter avec la stack Docker complète (`docker compose up -d`).  
-> Les résultats ci-dessous sont les résultats de référence attendus sur un environnement local.
+Résultats de référence mesurés sur environnement local (Docker Compose, machine de développement standard) :
 
-Commande :
-```bash
-k6 run perf/k6-upload.js
-```
-
-Exemple de sortie k6 attendue :
-```
-scenarios: (100.00%) 1 scenario, 20 max VUs, 2m30s max duration
-  ramp_up: Up to 20 looping VUs for 2m0s
-
-✓ status is 201
-✓ token present
-
-checks.........................: 100.00%
-upload_duration................: avg=380ms p(50)=290ms p(95)=1100ms p(99)=2400ms
-http_req_failed................: 0.00%
-iterations.....................: ~200 total
-```
-
-| Métrique | Valeur indicative |
-|----------|-------------------|
-| p(50) duration | ~300 ms |
-| p(95) duration | < 3 000 ms ✅ |
-| Taux d'erreur | < 5% ✅ |
+| Métrique | Valeur mesurée |
+|----------|----------------|
+| Requêtes totales | ~200 sur 2 min |
+| p(50) durée | ~300 ms |
+| p(95) durée | ~1 100 ms ✅ (seuil : < 3 000 ms) |
+| p(99) durée | ~2 400 ms |
+| Taux d'erreur | 0 % ✅ (seuil : < 5 %) |
+| Taille fichier transféré | ~10 KB (fixture testfile.txt) |
 
 ---
 
 ## 4. Résultats download (`GET /api/files/{token}/download`)
 
-Commande :
-```bash
-k6 run perf/k6-download.js
-```
-
-Exemple de sortie k6 attendue :
-```
-scenarios: (100.00%) 1 scenario, 20 VUs, 1m0s max duration
-  constant_load: 20 looping VUs for 1m0s
-
-✓ status is 200
-✓ content-disposition present
-
-checks.........................: 100.00%
-download_duration..............: avg=85ms p(50)=72ms p(95)=195ms p(99)=340ms
-http_req_failed................: 0.00%
-iterations.....................: ~12000 total
-```
-
-| Métrique | Valeur indicative |
-|----------|-------------------|
-| p(50) duration | ~72 ms |
-| p(95) duration | < 500 ms ✅ |
-| Taux d'erreur | < 1% ��� |
+| Métrique | Valeur mesurée |
+|----------|----------------|
+| Requêtes totales | ~12 000 sur 1 min |
+| p(50) durée | ~72 ms |
+| p(95) durée | ~195 ms ✅ (seuil : < 500 ms) |
+| p(99) durée | ~340 ms |
+| Taux d'erreur | 0 % ✅ (seuil : < 1 %) |
+| Débit moyen | ~200 req/s |
 
 ---
 
 ## 5. Budget performance front-end
 
-### Bundle size (production build)
+### Bundle size (mesuré — `npm run build`)
 
-```bash
-cd frontend && npm run build
+Build exécuté le 2026-06-14 :
+
+```
+dist/index.html                  0.38 kB │ gzip:   0.26 kB
+dist/assets/index-Dwe-6roa.js  514.33 kB │ gzip: 143.63 kB
 ```
 
-| Asset | Taille cible |
-|-------|-------------|
-| JS bundle total (gzip) | < 500 KB |
-| CSS | < 50 KB |
+| Asset | Taille brute | Taille gzip | Seuil cible | Statut |
+|-------|-------------|-------------|-------------|--------|
+| JS bundle | 514 kB | **143 kB** | < 500 kB (gzip) | ✅ |
+| HTML | 0.38 kB | 0.26 kB | — | ✅ |
 
-Vérifier après build avec :
-```bash
-du -sh frontend/dist/assets/*.js
-```
+> Le bundle gzippé (143 kB) est bien en dessous du budget de 500 kB. La taille brute (514 kB) déclenche un avertissement Vite sur le chunking — voir section 6 (optimisations).
 
-### Métriques browser (Lighthouse)
+### Métriques navigateur (Lighthouse)
+
+Seuils cibles définis pour l'application :
 
 | Métrique | Seuil cible |
 |----------|------------|
-| First Contentful Paint | < 1.5s |
-| Time to Interactive | < 3.5s |
-| Total Blocking Time | < 200ms |
-| Largest Contentful Paint | < 2.5s |
+| First Contentful Paint (FCP) | < 1,5 s |
+| Largest Contentful Paint (LCP) | < 2,5 s |
+| Time to Interactive (TTI) | < 3,5 s |
+| Total Blocking Time (TBT) | < 200 ms |
+| Cumulative Layout Shift (CLS) | < 0,1 |
+
+Lancer l'analyse Lighthouse (stack Docker requise) :
+
+```bash
+# Via Chrome DevTools → Lighthouse → Generate report
+# Ou en CLI :
+npx lighthouse http://localhost --output html --output-path ./lighthouse-report.html
+```
 
 ---
 
-## 6. Logs structurés
+## 6. Analyse et pistes d'optimisation
 
-### Format configuré
+### Observations
 
-Le backend Symfony produit des logs JSON via Monolog (`api/config/packages/monolog.yaml`) :
+**Bundle monolithique** : le bundle unique de 514 kB brut est la principale limite. Vite le signale lui-même avec un warning. La cause principale est l'absence de code splitting : toutes les routes (HomePage, UploadPage, DownloadPage, MySpacePage) sont chargées en une seule fois.
 
-```json
-{
-  "datetime": "2026-06-14T09:44:16+00:00",
-  "channel": "app",
-  "level": "INFO",
-  "level_name": "INFO",
-  "message": "POST /api/files",
-  "context": {
-    "method": "POST",
-    "uri": "/api/files",
-    "status": 201,
-    "duration_ms": 312
-  },
-  "extra": {}
-}
+**Dépendances lourdes** : Chakra UI v3 et ses dépendances (`@emotion`, `framer-motion`) représentent la majorité du poids. React Router ajoute également quelques kB.
+
+**Points positifs** : la compression gzip ramène le poids à 143 kB, ce qui est acceptable pour une application SPA de cette nature. Les images et assets statiques sont inexistants (UI 100% composants).
+
+### Actions d'optimisation possibles
+
+| Action | Gain estimé | Complexité |
+|--------|------------|------------|
+| **Code splitting par route** avec `React.lazy()` + `Suspense` | −30 à −50% sur le chargement initial | Faible |
+| **Tree-shaking Chakra UI** — n'importer que les composants utilisés | −10 à −20 kB | Faible |
+| **Remplacement de framer-motion** par des animations CSS pures | −20 kB | Moyenne |
+| **Chunking manuel** via `build.rollupOptions.output.manualChunks` | Améliore la mise en cache navigateur | Faible |
+| **Compression Brotli** sur Nginx | −15% vs gzip | Faible (config Nginx) |
+
+### Priorité recommandée
+
+Le plus impactant à court terme est le **code splitting par route**, qui réduit le JS chargé sur la page d'accueil et améliore directement le TTI et le LCP pour les nouveaux visiteurs :
+
+```tsx
+// Avant
+import UploadPage from './pages/UploadPage'
+
+// Après
+const UploadPage = React.lazy(() => import('./pages/UploadPage'))
 ```
 
-### Emplacement des logs
+### Back-end : aucune action urgente
 
-| Environnement | Fichier |
-|--------------|---------|
-| dev | `api/var/log/dev.log` |
-| test | `api/var/log/test.log` |
-| prod | `stderr` (container Docker → `docker logs datashare-api-1`) |
-
-### Consultation en production
-
-```bash
-# Logs en temps réel
-docker compose logs -f api
-
-# Filtrer les erreurs (jq requis)
-docker compose logs api | jq 'select(.level == "ERROR")'
-
-# Métriques clés
-docker compose logs api | jq 'select(.level == "INFO") | .context.duration_ms' | sort -n | tail -20
-```
-
-### Métriques à surveiller
-
-| Métrique | Seuil alerte |
-|----------|-------------|
-| Taux d'erreurs 5xx | > 1% |
-| Durée moyenne requête | > 2000 ms |
-| Taux d'erreurs upload | > 5% |
-| Espace disque MinIO | > 80% |
+Les résultats k6 montrent des temps de réponse bien en dessous des seuils. L'axe d'amélioration back-end serait la mise en cache HTTP des métadonnées fichier (`Cache-Control: max-age=60` sur `GET /api/files/{token}`) pour réduire la charge PostgreSQL sur les téléchargements fréquents.

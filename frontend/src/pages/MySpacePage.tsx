@@ -15,16 +15,6 @@ function formatExpiry(file: FileRecord): string {
   return `Expire dans ${daysLeft} jours`
 }
 
-function getUserIdentifier(): string {
-  const token = localStorage.getItem('token')
-  if (!token) return ''
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
-    return payload.username ?? payload.email ?? ''
-  } catch {
-    return ''
-  }
-}
 
 const FileIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#718096" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>

@@ -371,7 +371,8 @@ Tests de charge définis avec **k6** sur les deux endpoints critiques :
 
 Scripts disponibles dans `perf/k6-upload.js` et `perf/k6-download.js`.
 
-Budget de performance frontend : bundle JS gzippé < 500 Ko, LCP < 2,5s.
+**Budget de performance frontend (mesuré)**  
+Bundle JS gzippé : **143 kB** (seuil < 500 kB ✅). Seuils LCP < 2,5s, TTI < 3,5s. La principale action d'optimisation identifiée est le code splitting par route (`React.lazy`), qui réduirait le chargement initial. Voir [`PERF.md`](PERF.md#6-analyse-et-pistes-doptimisation) pour l'analyse complète.
 
 ### Maintenance (voir [`MAINTENANCE.md`](MAINTENANCE.md))
 
