@@ -62,6 +62,7 @@ jobs:
           extensions: pdo_pgsql, intl, pcov
           coverage: pcov
 
+      - run: composer update symfony/monolog-bundle --no-interaction --prefer-dist
       - run: composer install --no-interaction --prefer-dist
 
       - name: Run migrations
