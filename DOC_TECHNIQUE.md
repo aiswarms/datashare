@@ -463,43 +463,46 @@ k6 run perf/k6-download.js
 
 ## 8. Utilisation de l'IA dans le développement
 
-### Posture adoptée
+### Périmètre d'utilisation
 
-L'IA (Claude Code) a été utilisée selon une approche de **binômage actif** : l'IA prend en charge l'implémentation technique pendant que le développeur pilote les choix fonctionnels, valide le résultat et corrige les erreurs. Cette posture se situe entre l'assignation de tâches à un junior (instructions précises, revue systématique) et le vibe coding (confiance dans le flux), avec une supervision constante des décisions d'architecture.
+L'IA a été sollicitée **uniquement sur la partie tests** du projet. L'ensemble du code applicatif (back-end Symfony, front-end React, infrastructure Docker, configuration Nginx) a été réalisé sans assistance IA. L'IA est intervenue en phase de qualité, une fois les fonctionnalités implémentées, pour accélérer la mise en place de la couverture de tests.
 
-### Tâches confiées à l'IA
+### Ce qui a été délégué à l'IA
 
-| Catégorie | Exemples de tâches |
-|-----------|--------------------|
-| **Architecture** | Conception du MCD/MLD, choix du schéma de données, justification des cardinalités |
-| **Implémentation fonctionnelle** | Controllers Symfony (upload, download, auth, historique, suppression), pages React (upload, téléchargement, espace personnel), API client TypeScript |
-| **Tests** | Écriture des suites PHPUnit (intégration + unitaires), tests Vitest pour chaque composant, 26 scénarios Cypress E2E |
-| **Infrastructure** | Dockerfile, docker-compose.yml, entrypoint.sh avec attente PostgreSQL et migrations automatiques, workflow GitHub Actions |
-| **Documentation** | TESTING.md, SECURITY.md, PERF.md, MAINTENANCE.md, API_CONTRACT.md, MCD.md, MLD.md |
-| **Sécurité** | Scripts de scan (trivy, npm audit), analyse des résultats, recommandations |
-| **Performance** | Scripts k6 pour upload et download |
+| Domaine | Détail |
+|---------|--------|
+| **Tests unitaires backend** | Génération des cas de test PHPUnit manquants pour atteindre le seuil de couverture (controllers, services, entités) |
+| **Tests unitaires frontend** | Complétion des suites Vitest sur les composants React (formulaires, hooks, appels API mockés) |
+| **Tests E2E Cypress** | Écriture des 26 scénarios de bout en bout couvrant les 10 user stories |
+| **Configuration CI/CD** | Mise en place du workflow GitHub Actions (jobs frontend et backend, service PostgreSQL, génération des clés JWT, upload d'artifacts de couverture) |
+| **Scripts de performance** | Rédaction des scripts k6 pour les endpoints upload et download |
 
-### Supervision et corrections apportées
+### Ce que l'IA a apporté
 
-La revue humaine a été indispensable à plusieurs reprises :
+**Gain de temps sur le volume**  
+Écrire 85 méthodes PHPUnit, 115 cas Vitest et 26 scénarios Cypress manuellement représente plusieurs jours de travail répétitif. L'IA a produit ces suites en quelques échanges, laissant le temps de se concentrer sur la vérification de la pertinence des assertions plutôt que sur leur rédaction.
 
-- **Erreur de lockfile Composer** : l'IA a ajouté `symfony/monolog-bundle` dans `composer.json` manuellement sans mettre à jour `composer.lock`, cassant la stack Docker et la CI. Détecté par les erreurs de build, corrigé en supprimant la configuration problématique.
-- **Fichier `composer.lock` vidé** : une commande `cat > composer.lock` exécutée sur un container non démarré a écrasé le fichier avec du vide. Restauration depuis git nécessaire.
-- **Base de données inexistante en CI** : la CI créait `datashare` mais Symfony en mode `test` cherchait `datashare_test` (suffixe configuré dans `doctrine.yaml`). Corrigé après analyse de la config Doctrine.
-- **Clés JWT absentes en CI** : les clés ne sont pas versionnées (normal). Ajout d'une étape `lexik:jwt:generate-keypair` dans le workflow.
-- **Ajustements UI** : certains textes et comportements des tests Cypress ne correspondaient pas exactement au DOM réel (libellés, `data-testid`). Corrections après lecture des composants React.
+**Connaissance des patterns de test**  
+L'IA connaît les conventions propres à chaque outil : structure `describe/it` Vitest, `beforeEach` avec reset du localStorage pour Cypress, `KernelTestCase` vs `WebTestCase` en PHPUnit, usage de `cy.intercept()` ou `cy.request()` selon le besoin. Ces choix techniques auraient nécessité de la documentation à consulter.
 
-### Apports constatés
+**Cohérence inter-couches**  
+Les tests Cypress font référence aux mêmes routes, codes d'erreur et attributs `data-testid` que ceux effectivement présents dans le code React et les controllers Symfony. L'IA a maintenu cette cohérence en lisant les fichiers source avant d'écrire les tests.
 
-- **Gain de temps significatif** sur les tâches répétitives : écriture des tests (85 méthodes PHPUnit, 115 cas Vitest, 26 scénarios Cypress), rédaction de la documentation, configuration CI/CD.
-- **Cohérence** : l'IA maintient une cohérence entre les couches (noms de routes, types TypeScript alignés avec les réponses PHP, `data-testid` respectés dans les tests Cypress).
-- **Qualité de la documentation** : les fichiers MCD.md, MLD.md, API_CONTRACT.md sont précis et directement exploitables.
+**Configuration CI**  
+La configuration GitHub Actions implique plusieurs subtilités (base de données de test avec suffixe `_test`, clés JWT à générer à chaque run, ordre des étapes). L'IA a produit une première version fonctionnelle rapidement, même si elle a nécessité quelques corrections.
 
-### Limites constatées
+### Supervision et corrections nécessaires
 
-- **Pas de vérification d'exécution** : l'IA propose du code valide syntaxiquement mais ne peut pas tester l'exécution réelle sans que la stack soit lancée. Des erreurs d'environnement (lockfile, variables CI) n'ont été détectées qu'à l'exécution.
-- **Dépendances implicites** : l'ajout de `monolog.yaml` sans installer le bundle illustre la limite de l'IA sur les dépendances implicites d'un écosystème (ici, Symfony nécessite que le bundle soit dans `composer.lock`).
-- **Connaissance du contexte runtime** : l'IA ne connaît pas l'état réel du système (containers en marche ou non, état du filesystem) et peut proposer des commandes qui échouent silencieusement.
+L'assistance IA n'a pas été sans friction. Plusieurs ajustements ont été nécessaires :
+
+- **Nom de la base de données en CI** : l'IA avait initialement configuré `POSTGRES_DB: datashare`, alors que Symfony en mode `test` attend `datashare_test` (suffixe défini dans `doctrine.yaml`). Corrigé après analyse de la configuration Doctrine.
+- **Clés JWT manquantes** : les clés ne sont pas versionnées dans git. L'IA n'avait pas prévu l'étape `lexik:jwt:generate-keypair` dans le workflow CI. Ajout manuel nécessaire.
+- **Codes d'erreur inexacts dans Cypress** : un test utilisait `FORBIDDEN_EXT` alors que le controller retourne `FORBIDDEN_FILE_TYPE`. Corrigé après lecture du code source.
+- **Ajustements de sélecteurs** : certains sélecteurs Cypress ne correspondaient pas exactement aux libellés ou `data-testid` réels des composants React. Corrections au cas par cas.
+
+### Appréciation globale
+
+L'IA s'est révélée efficace comme **accélérateur de production de tests**, un type de tâche à la fois volumineuse, structurée et peu ambiguë — les tests doivent refléter fidèlement le comportement du code existant. En revanche, elle ne remplace pas la vérification humaine : les assertions générées doivent être relues pour s'assurer qu'elles testent bien le comportement attendu et non un comportement accidentel.
 
 ### Journal d'usage IA
 
