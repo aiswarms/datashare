@@ -334,7 +334,7 @@ Les détails complets sont dans les fichiers dédiés du dépôt. Voici une synt
 | Type | Outil | Fichiers | Résultat |
 |------|-------|----------|---------|
 | Tests unitaires backend | PHPUnit 13 | 14 fichiers, ~85 méthodes | ✅ Passing |
-| Tests unitaires frontend | Vitest 4 | 10 fichiers, 115 cas | ✅ Passing |
+| Tests unitaires frontend | Vitest 4 | 10 fichiers, 127 cas | ✅ Passing |
 | Tests E2E | Cypress 15 | 5 fichiers, **26 scénarios** | Exécutables avec stack Docker |
 
 Les 26 scénarios Cypress couvrent l'intégralité des 10 user stories : inscription, connexion, déconnexion, upload authentifié et anonyme, protection par mot de passe, téléchargement, historique, filtrage par tags, suppression.
@@ -343,10 +343,10 @@ Les 26 scénarios Cypress couvrent l'intégralité des 10 user stories : inscrip
 
 | Indicateur | Résultat | Seuil requis |
 |------------|---------|-------------|
-| Instructions | **85.34%** | 70% ✅ |
-| Branches | **83.33%** | 70% ✅ |
-| Fonctions | **82.82%** | 70% ✅ |
-| Lignes | **88.63%** | 70% ✅ |
+| Instructions | **88.54%** | 70% ✅ |
+| Branches | **86.28%** | 70% ✅ |
+| Fonctions | **84.61%** | 70% ✅ |
+| Lignes | **91.69%** | 70% ✅ |
 
 Rapport HTML disponible après `cd frontend && npm run coverage` → `frontend/coverage/index.html`.
 
@@ -481,7 +481,7 @@ L'IA a été sollicitée **uniquement sur la partie tests** du projet. L'ensembl
 ### Ce que l'IA a apporté
 
 **Gain de temps sur le volume**  
-Écrire 85 méthodes PHPUnit, 115 cas Vitest et 26 scénarios Cypress manuellement représente plusieurs jours de travail répétitif. L'IA a produit ces suites en quelques échanges, laissant le temps de se concentrer sur la vérification de la pertinence des assertions plutôt que sur leur rédaction.
+Écrire 85 méthodes PHPUnit, 127 cas Vitest et 26 scénarios Cypress manuellement représente plusieurs jours de travail répétitif. L'IA a produit ces suites en quelques échanges, laissant le temps de se concentrer sur la vérification de la pertinence des assertions plutôt que sur leur rédaction.
 
 **Connaissance des patterns de test**  
 L'IA connaît les conventions propres à chaque outil : structure `describe/it` Vitest, `beforeEach` avec reset du localStorage pour Cypress, `KernelTestCase` vs `WebTestCase` en PHPUnit, usage de `cy.intercept()` ou `cy.request()` selon le besoin. Ces choix techniques auraient nécessité de la documentation à consulter.
