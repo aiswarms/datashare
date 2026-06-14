@@ -1,85 +1,158 @@
 # DataShare
 
-Application web de partage de fichiers permettant aux utilisateurs — anonymes ou enregistrés — d'uploader des fichiers et de les partager via des liens de téléchargement temporaires, protégés par mot de passe.
+Application web de partage de fichiers : upload authentifié ou anonyme, liens temporaires, protection par mot de passe, gestion des tags.
 
-## Fonctionnalités
+→ [Documentation technique complète](DOC_TECHNIQUE.md)
 
-- Upload de fichiers (authentifié ou anonyme) jusqu'à **1 Go**
-- Liens de téléchargement avec **expiration 1–7 jours**
-- **Protection par mot de passe** optionnelle par fichier
-- **Historique** et suppression manuelle pour les utilisateurs enregistrés
-- **Gestion des tags** (ajout / suppression de labels sur les fichiers)
-- Purge automatique des fichiers expirés
-- Authentification JWT
+---
 
-## Stack technique
+## Prérequis
 
-| Couche | Technologie |
-|--------|-------------|
-| Back-end | PHP 8.4 · Symfony 8.1 |
-| Front-end | TypeScript · React 19 · Chakra UI |
-| Base de données | PostgreSQL 16 |
-| Stockage fichiers | MinIO (S3-compatible) |
-| Auth | JWT RS256 (`lexik/jwt-authentication-bundle`) |
-| Reverse proxy | Nginx |
-| Conteneurisation | Docker / Docker Compose |
+| Outil | Version minimale |
+|-------|-----------------|
+| Docker | 24+ |
+| Docker Compose | 2.20+ |
+| Git | 2.40+ |
 
-## Documentation
+---
 
-| Fichier | Description |
-|---------|-------------|
-| [`DOC_TECHNIQUE.md`](DOC_TECHNIQUE.md) | **Documentation technique complète** — architecture, choix technologiques, modèle de données, API, sécurité, qualité, installation, usage IA |
-| [`API_CONTRACT.md`](API_CONTRACT.md) | Référence complète de l'API REST (endpoints, payloads, codes d'erreur) |
-| [`TESTING.md`](TESTING.md) | Plan de tests — PHPUnit, Vitest, Cypress (26 scénarios E2E), couverture |
-| [`SECURITY.md`](SECURITY.md) | Rapport de scan de sécurité (npm audit, trivy) et règles implémentées |
-| [`PERF.md`](PERF.md) | Tests de performance k6 et budget front-end |
-| [`MAINTENANCE.md`](MAINTENANCE.md) | Procédures de maintenance, rotation des secrets, sauvegardes |
-| [`MCD.md`](MCD.md) | Modèle Conceptuel de Données |
-| [`MLD.md`](MLD.md) | Modèle Logique de Données |
-| [`SPEC_SUMMARY.md`](SPEC_SUMMARY.md) | User stories et contraintes techniques du MVP |
-| [`journal-ia.md`](journal-ia.md) | Journal d'usage de l'IA |
+## Installation
 
-## Installation rapide
-
-**Prérequis** : Docker 24+, Docker Compose 2.20+
+### 1. Cloner le dépôt
 
 ```bash
 git clone git@github.com:aiswarms/datashare.git
 cd datashare
+```
+
+### 2. Configurer les variables d'environnement
+
+```bash
+cp api/.env api/.env.local
+```
+
+Éditer `api/.env.local` avec vos valeurs :
+
+| Variable | Description | Valeur par défaut (dev) |
+|----------|-------------|------------------------|
+| `APP_SECRET` | Secret Symfony (32 chars min) | *(à définir)* |
+| `DATABASE_URL` | URL de connexion PostgreSQL | `postgresql://datashare:datashare@db:5432/datashare?serverVersion=16` |
+| `JWT_PASSPHRASE` | Passphrase de la clé privée JWT | `changeme` |
+| `S3_ENDPOINT` | URL MinIO / S3 | `http://minio:9000` |
+| `S3_ACCESS_KEY` | Clé d'accès S3 | `datashare` |
+| `S3_SECRET_KEY` | Clé secrète S3 | `datashare` |
+| `S3_REGION` | Région S3 | `us-east-1` |
+| `S3_BUCKET` | Nom du bucket | `datashare` |
+
+> En développement, les valeurs par défaut du `docker-compose.yml` sont fonctionnelles sans modification.
+
+### 3. Démarrer la stack
+
+```bash
 docker compose up -d
 ```
 
-L'application est accessible sur **http://localhost**.
+L'API attend automatiquement que PostgreSQL soit prêt, puis exécute les migrations. Aucune action manuelle requise.
 
-L'entrypoint attend PostgreSQL, puis exécute les migrations automatiquement.
+### 4. Générer les clés JWT
 
-> Pour les détails (variables d'environnement, commandes de test, k6) → [`DOC_TECHNIQUE.md`](DOC_TECHNIQUE.md#7-processus-dinstallation-et-dexécution)
+Au premier démarrage (si les clés n'existent pas encore) :
 
-## API
+```bash
+docker compose exec api php bin/console lexik:jwt:generate-keypair
+```
 
-Base URL : `/api` · Auth : `Authorization: Bearer <token>`
+### 5. Accéder à l'application
 
-| Méthode | Chemin | Accès | Description |
-|---------|--------|-------|-------------|
-| `POST` | `/api/auth/register` | Public | Créer un compte |
-| `POST` | `/api/auth/login` | Public | Connexion, retourne un JWT |
-| `POST` | `/api/files` | Auth ou Anonyme | Uploader un fichier |
-| `GET` | `/api/files` | Auth | Historique des fichiers |
-| `GET` | `/api/files/{token}` | Public | Métadonnées d'un fichier |
-| `GET` | `/api/files/{token}/download` | Public | Télécharger un fichier |
-| `DELETE` | `/api/files/{id}` | Auth | Supprimer un fichier |
+| Service | URL |
+|---------|-----|
+| Application | http://localhost |
+| API (Swagger UI) | http://localhost/api/doc |
+| MinIO Console | http://localhost:9001 |
 
-Interface Swagger UI disponible sur `http://localhost/api/doc`. Référence complète → [`API_CONTRACT.md`](API_CONTRACT.md)
+---
 
-## Modèle de données
+## Commandes utiles
 
-Trois entités : **User**, **File**, **Tag**.
+```bash
+# Arrêter la stack
+docker compose down
 
-- Un fichier appartient à 0 ou 1 utilisateur (0 = upload anonyme)
-- Un tag appartient à exactement 1 fichier ; les noms sont uniques par fichier
-- Les tokens de téléchargement sont des UUID v4 — non devinables, distincts des IDs internes
+# Voir les logs de l'API
+docker compose logs -f api
 
-Diagrammes complets → [`MCD.md`](MCD.md) · [`MLD.md`](MLD.md)
+# Accéder au shell de l'API
+docker compose exec api sh
+
+# Créer une migration après modification des entités
+docker compose exec api php bin/console doctrine:migrations:diff
+
+# Appliquer les migrations manuellement
+docker compose exec api php bin/console doctrine:migrations:migrate
+```
+
+---
+
+## Tests
+
+### Backend (PHPUnit)
+
+```bash
+docker compose exec api php vendor/bin/phpunit
+```
+
+### Frontend (Vitest)
+
+```bash
+cd frontend
+npm install
+npm test
+```
+
+### Couverture frontend
+
+```bash
+cd frontend && npm run coverage
+# Rapport HTML → frontend/coverage/index.html
+```
+
+### Tests E2E Cypress (stack Docker requise)
+
+```bash
+cd frontend
+npm run cy:run    # headless
+npm run cy:open   # interface graphique
+```
+
+### Tests de charge k6
+
+```bash
+# Installer k6 : brew install k6
+k6 run perf/k6-upload.js
+k6 run perf/k6-download.js
+```
+
+---
+
+## Structure du projet
+
+```
+datashare/
+├── api/              # Back-end Symfony 8.1
+├── frontend/         # Front-end React 19 / Vite
+│   └── cypress/      # Tests E2E (26 scénarios)
+├── nginx/            # Configuration reverse proxy
+├── perf/             # Scripts k6
+├── docker-compose.yml
+├── DOC_TECHNIQUE.md  # Documentation technique complète
+├── API_CONTRACT.md   # Référence de l'API REST
+├── TESTING.md        # Plan de tests et couverture
+├── SECURITY.md       # Rapport de scan de sécurité
+├── PERF.md           # Tests de performance
+└── MAINTENANCE.md    # Procédures de maintenance
+```
+
+---
 
 ## Licence
 
