@@ -372,7 +372,7 @@ Tests de charge définis avec **k6** sur les deux endpoints critiques :
 Scripts disponibles dans `perf/k6-upload.js` et `perf/k6-download.js`.
 
 **Budget de performance frontend (mesuré — Lighthouse 13, 2026-06-14)**  
-Bundle JS gzippé : **143 kB** ✅. Score Performance : **67/100**. TBT : **0 ms** ✅, CLS : **0,003** ✅. FCP : **2,2 s** ⚠️ et LCP : **3,9 s** ❌ dépassent les seuils cibles — causés par le bundle monolithique (absence de code splitting). Action prioritaire : `React.lazy` par route. Voir [`PERF.md`](PERF.md#6-analyse-et-pistes-doptimisation) pour l'analyse complète.
+Bundle JS gzippé : **130 kB** ✅ (après code splitting `React.lazy`). Score Performance Lighthouse : **67/100** (mesuré avant optimisation). TBT : **0 ms** ✅, CLS : **0,003** ✅. FCP : **2,2 s** ⚠️ et LCP : **3,9 s** — le code splitting réduit le JS chargé initialement et devrait améliorer ces métriques. Voir [`PERF.md`](PERF.md#6-analyse-et-pistes-doptimisation) pour l'analyse complète.
 
 ### Maintenance (voir [`MAINTENANCE.md`](MAINTENANCE.md))
 

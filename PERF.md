@@ -85,19 +85,26 @@ Résultats de référence mesurés sur environnement local (Docker Compose, mach
 
 ### Bundle size (mesuré — `npm run build`)
 
-Build exécuté le 2026-06-14 :
+Build exécuté le 2026-06-14 (après code splitting) :
 
 ```
-dist/index.html                  0.38 kB │ gzip:   0.26 kB
-dist/assets/index-Dwe-6roa.js  514.33 kB │ gzip: 143.63 kB
+dist/index.html                          0.38 kB │ gzip:   0.26 kB
+dist/assets/index-DWBJVaOr.js         464.08 kB │ gzip: 130.83 kB
+dist/assets/MySpacePage-Br5Q7oaI.js    11.20 kB │ gzip:   3.24 kB
+dist/assets/DownloadPage-DJ9t0JsO.js    5.20 kB │ gzip:   2.04 kB
+dist/assets/UploadPage-5ey5XX8A.js      4.44 kB │ gzip:   1.90 kB
+dist/assets/HomePage-D3hWIeZz.js        4.34 kB │ gzip:   1.86 kB
+dist/assets/LoginPage-CtoH3zzZ.js       1.80 kB │ gzip:   0.82 kB
+dist/assets/RegisterPage-DIHkdvH-.js    2.15 kB │ gzip:   0.88 kB
 ```
 
 | Asset | Taille brute | Taille gzip | Seuil cible | Statut |
 |-------|-------------|-------------|-------------|--------|
-| JS bundle | 514 kB | **143 kB** | < 500 kB (gzip) | ✅ |
+| Bundle principal (Chakra UI + React) | 464 kB | **130 kB** | < 500 kB (gzip) | ✅ |
+| Pages (chargées à la demande) | 2–11 kB | 0,8–3,2 kB | — | ✅ |
 | HTML | 0.38 kB | 0.26 kB | — | ✅ |
 
-> Le bundle gzippé (143 kB) est bien en dessous du budget de 500 kB. La taille brute (514 kB) déclenche un avertissement Vite sur le chunking — voir section 6 (optimisations).
+> Le code splitting (`React.lazy`) divise l'application en chunks par page. Le navigateur charge uniquement la page demandée, ce qui réduit le JS à parser au premier affichage.
 
 ### Métriques navigateur (Lighthouse)
 
@@ -152,15 +159,7 @@ npx lighthouse http://localhost --output html --output-path ./lighthouse-report.
 
 ### Priorité recommandée
 
-Le plus impactant à court terme est le **code splitting par route**, qui réduit le JS chargé sur la page d'accueil et améliore directement le TTI et le LCP pour les nouveaux visiteurs :
-
-```tsx
-// Avant
-import UploadPage from './pages/UploadPage'
-
-// Après
-const UploadPage = React.lazy(() => import('./pages/UploadPage'))
-```
+Le **code splitting par route** a été implémenté via `React.lazy` + `Suspense` dans `src/App.tsx`. Chaque page est désormais chargée à la demande. Le bundle principal est passé de 514 kB à 464 kB brut (143 kB → 130 kB gzip). Une nouvelle analyse Lighthouse après déploiement permettra de mesurer l'impact réel sur FCP et LCP.
 
 ### Back-end : aucune action urgente
 
