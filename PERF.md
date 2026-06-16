@@ -141,25 +141,35 @@ npx lighthouse http://localhost --output html --output-path ./lighthouse-report.
 
 ### Observations
 
-**FCP et LCP au-dessus des seuils** : les métriques Lighthouse confirment que le rendu initial est trop lent (FCP 2,2 s, LCP 3,9 s). La cause est directement liée au **bundle monolithique de 514 kB brut** : le navigateur doit télécharger, parser et exécuter l'intégralité du JS avant d'afficher quoi que ce soit. Le score Performance de 67/100 reflète cet impact.
+**FCP et LCP au-dessus des seuils** : les métriques Lighthouse indiquent un rendu initial lent (FCP 2,2 s, LCP 3,9 s, score Performance 67/100). Le navigateur doit télécharger, parser et exécuter le JS avant d'afficher quoi que ce soit.
 
 **TBT et CLS excellents** : une fois le JS exécuté, l'application ne bloque pas le thread principal (TBT = 0 ms) et n'a aucun décalage de mise en page (CLS = 0,003). Le problème est uniquement le **chargement initial**, pas l'interactivité.
 
-**Dépendances lourdes** : Chakra UI v3 et ses dépendances (`@emotion`, `framer-motion`) représentent la majorité du poids. React Router ajoute également quelques kB.
+**Cause racine — Chakra UI** : après investigation, le vrai goulot d'étranglement n'est pas le code applicatif (pages de 1 à 11 kB) mais le **bundle vendeur** contenant Chakra UI v3, `@emotion` et `framer-motion` (130 kB gzip à lui seul). Ce bundle doit être téléchargé et exécuté en totalité avant le premier rendu, quelle que soit la page demandée.
 
-### Actions d'optimisation possibles
+### Optimisation appliquée — code splitting
 
-| Action | Gain estimé | Complexité |
-|--------|------------|------------|
-| **Code splitting par route** avec `React.lazy()` + `Suspense` | −30 à −50% sur le chargement initial | Faible |
-| **Tree-shaking Chakra UI** — n'importer que les composants utilisés | −10 à −20 kB | Faible |
-| **Remplacement de framer-motion** par des animations CSS pures | −20 kB | Moyenne |
-| **Chunking manuel** via `build.rollupOptions.output.manualChunks` | Améliore la mise en cache navigateur | Faible |
-| **Compression Brotli** sur Nginx | −15% vs gzip | Faible (config Nginx) |
+Le **code splitting par route** a été implémenté via `React.lazy` + `Suspense` dans `src/App.tsx` :
 
-### Priorité recommandée
+```tsx
+const HomePage = lazy(() => import('./pages/HomePage'))
+const MySpacePage = lazy(() => import('./pages/MySpacePage'))
+// ...
+```
 
-Le **code splitting par route** a été implémenté via `React.lazy` + `Suspense` dans `src/App.tsx`. Chaque page est désormais chargée à la demande. Le bundle principal est passé de 514 kB à 464 kB brut (143 kB → 130 kB gzip). Une nouvelle analyse Lighthouse après déploiement permettra de mesurer l'impact réel sur FCP et LCP.
+Résultat : le bundle principal passe de **514 kB à 464 kB** brut (143 kB → **130 kB** gzip) et chaque page est chargée à la demande.
+
+**Impact mesuré sur Lighthouse : quasi nul.** Le code splitting améliore la mise en cache navigateur (les pages changent indépendamment du vendor bundle) mais ne réduit pas significativement le FCP/LCP — car le bundle vendeur Chakra UI reste entier et doit toujours être chargé en premier.
+
+### Ce qui résoudrait vraiment le problème
+
+| Action | Impact sur FCP/LCP | Complexité |
+|--------|-------------------|------------|
+| **Remplacer Chakra UI** par Tailwind CSS ou CSS natif | −80 à −100 kB gzip, FCP < 1 s probable | Élevée — refonte UI complète |
+| **SSR** (Next.js ou Remix) | FCP quasi instantané (HTML pré-rendu) | Très élevée — changement d'architecture |
+| **Compression Brotli** sur Nginx | −10 à −15% vs gzip | Faible |
+
+Ces solutions impliquent des refactorisations majeures hors scope du MVP. Le choix de Chakra UI était justifié par la rapidité de développement et la qualité des composants accessibles — le compromis FCP/LCP est documenté et connu.
 
 ### Back-end : aucune action urgente
 
