@@ -19,6 +19,8 @@
 
 ### Vue globale
 
+![Architecture DataShare](documentation/architecture.png)
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Navigateur (HTTPS)                        │
