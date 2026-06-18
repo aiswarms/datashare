@@ -70,6 +70,8 @@ docker compose exec api php bin/console lexik:jwt:generate-keypair
 | API (Swagger UI) | http://localhost/api/doc |
 | MinIO Console | http://localhost:9001 |
 
+Sur un volume vierge, créez votre premier compte via **http://localhost/register**.
+
 ---
 
 ## Commandes utiles

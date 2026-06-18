@@ -38,20 +38,19 @@ describe('US01 — Upload authentifié', () => {
     cy.contains('Copier le lien', { timeout: 10000 }).should('be.visible')
   })
 
-  it('9. upload avec tags → tags visibles dans l\'historique', () => {
-    cy.window().then(win => {
-      const formData = new win.FormData()
-      const blob = new win.Blob(['tagged file content'], { type: 'text/plain' })
-      formData.append('file', blob, 'tagged.txt')
-      formData.append('expires_in_days', '7')
-      formData.append('tags[]', 'cypress')
-      formData.append('tags[]', 'e2e')
-      return win.fetch('/api/files', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${jwtToken}` },
-        body: formData,
-      })
-    })
+  it('9. upload avec tags via UI → chips affichés puis tags visibles dans l\'historique', () => {
+    cy.visit('/upload')
+    cy.get('input[type=file]').selectFile(
+      { contents: Cypress.Buffer.from('tagged file content'), fileName: 'tagged.txt', mimeType: 'text/plain' },
+      { force: true }
+    )
+    cy.get('input[placeholder="Ajouter un tag…"]').type('cypress{enter}')
+    cy.contains('cypress').should('be.visible')
+    cy.get('input[placeholder="Ajouter un tag…"]').type('e2e')
+    cy.get('button').contains('+').click()
+    cy.contains('e2e').should('be.visible')
+    cy.contains('Téléverser').click()
+    cy.contains('Copier le lien', { timeout: 10000 }).should('be.visible')
     cy.visit('/my-space')
     cy.contains('cypress').should('be.visible')
     cy.contains('e2e').should('be.visible')

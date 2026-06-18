@@ -76,25 +76,25 @@ npm run coverage
 # Rapport disponible dans frontend/coverage/index.html
 ```
 
-### Résultats de couverture (mesurés le 2026-06-14)
+### Résultats de couverture (mesurés le 2026-06-18)
 
 ```
 -------------------|---------|----------|---------|---------|
 File               | % Stmts | % Branch | % Funcs | % Lines |
 -------------------|---------|----------|---------|---------|
-All files          |   88.54 |    86.28 |   84.61 |   91.69 |
- src/api           |   93.33 |    66.66 |   85.71 |   92.85 |
-  files.ts         |   92.00 |    66.66 |   80.00 |   91.30 |
- src/pages         |   87.88 |    87.08 |   83.69 |   91.39 |
+All files          |   92.03 |    91.93 |   88.42 |   96.08 |
+ src               |   61.53 |   100.00 |   28.57 |  100.00 |
+  App.tsx          |   61.53 |   100.00 |   28.57 |  100.00 |
+ src/pages         |   92.30 |    91.26 |   91.17 |   95.53 |
   DownloadPage.tsx |   84.74 |    79.54 |   92.30 |   93.61 |
   HomePage.tsx     |   75.43 |    80.00 |   53.33 |   79.16 |
   MySpacePage.tsx  |  100.00 |   100.00 |  100.00 |  100.00 |
-  UploadPage.tsx   |   73.77 |    76.19 |   53.33 |   78.84 |
+  UploadPage.tsx   |   96.05 |    95.00 |   95.83 |  100.00 |
 -------------------|---------|----------|---------|---------|
-Statements : 88.54% (317/358) ✅
-Branches   : 86.28% (195/226) ✅
-Functions  : 84.61% (88/104)  ✅
-Lines      : 91.69% (287/313) ✅
+Statements : 92.03% (358/389) ✅
+Branches   : 91.93% (228/248) ✅
+Functions  : 88.42% (107/121) ✅
+Lines      : 96.08% (319/332) ✅
 ```
 
 **Seuil requis : 70% — Seuil atteint sur tous les indicateurs.**
