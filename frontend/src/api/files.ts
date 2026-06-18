@@ -48,11 +48,12 @@ export async function deleteFile(id: number) {
   return { ok: res.ok, status: res.status }
 }
 
-export async function uploadFile(file: File, expiresInDays: number, password?: string) {
+export async function uploadFile(file: File, expiresInDays: number, password?: string, tags?: string[]) {
   const form = new FormData()
   form.append('file', file)
   form.append('expires_in_days', String(expiresInDays))
   if (password) form.append('password', password)
+  if (tags) tags.forEach(t => form.append('tags[]', t))
 
   const token = localStorage.getItem('token')
   const res = await fetch(`${BASE}/files`, {

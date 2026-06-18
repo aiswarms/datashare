@@ -42,6 +42,8 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [password, setPassword] = useState('')
   const [expiresInDays, setExpiresInDays] = useState(7)
+  const [tags, setTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
   const [sizeError, setSizeError] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -65,7 +67,7 @@ export default function UploadPage() {
     if (!file || sizeError) return
     setLoading(true)
     setError('')
-    const { ok, status, data } = await uploadFile(file, expiresInDays, password || undefined)
+    const { ok, status, data } = await uploadFile(file, expiresInDays, password || undefined, tags.length ? tags : undefined)
     setLoading(false)
     if (status === 401) {
       localStorage.removeItem('token')
@@ -164,6 +166,73 @@ export default function UploadPage() {
             </>
           ) : (
             <>
+              <VStack gap={1} align="stretch">
+                <Text fontSize="sm" color="gray.600">Tags</Text>
+                <HStack gap={2}>
+                  <Input
+                    placeholder="Ajouter un tag…"
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && tagInput.trim() && !tags.includes(tagInput.trim()) && tagInput.trim().length <= 30) {
+                        setTags(prev => [...prev, tagInput.trim()])
+                        setTagInput('')
+                      }
+                    }}
+                    borderColor="gray.200"
+                    size="sm"
+                  />
+                  <Button
+                    size="sm"
+                    bg="#D4675A"
+                    color="white"
+                    borderRadius="md"
+                    px={3}
+                    flexShrink={0}
+                    _hover={{ bg: '#c25a4e' }}
+                    disabled={!tagInput.trim() || tags.includes(tagInput.trim()) || tagInput.trim().length > 30}
+                    onClick={() => {
+                      if (tagInput.trim() && !tags.includes(tagInput.trim()) && tagInput.trim().length <= 30) {
+                        setTags(prev => [...prev, tagInput.trim()])
+                        setTagInput('')
+                      }
+                    }}
+                  >
+                    +
+                  </Button>
+                </HStack>
+                {tags.length > 0 && (
+                  <HStack gap={2} flexWrap="wrap" mt={1}>
+                    {tags.map(tag => (
+                      <Box
+                        key={tag}
+                        display="inline-flex"
+                        alignItems="center"
+                        gap="4px"
+                        px={2}
+                        py={0.5}
+                        borderRadius="full"
+                        bg="#fdf2f0"
+                        border="1px solid"
+                        borderColor="#D4675A"
+                        fontSize="xs"
+                        color="#D4675A"
+                      >
+                        {tag}
+                        <Box
+                          as="button"
+                          lineHeight={1}
+                          onClick={() => setTags(prev => prev.filter(t => t !== tag))}
+                          _hover={{ opacity: 0.7 }}
+                        >
+                          ×
+                        </Box>
+                      </Box>
+                    ))}
+                  </HStack>
+                )}
+              </VStack>
+
               <VStack gap={1} align="stretch">
                 <Text fontSize="sm" color="gray.600">Mot de passe</Text>
                 <Input
