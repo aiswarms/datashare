@@ -309,6 +309,26 @@ function FileRow({ file, onDelete }: { file: FileRecord; onDelete: () => void })
           <Text fontSize="xs" color={file.is_expired ? CORAL : 'gray.500'} fontWeight={file.is_expired ? 'semibold' : 'normal'}>
             {expiry}
           </Text>
+          {file.tags.length > 0 && (
+            <HStack gap={1} mt={1} flexWrap="wrap">
+              {file.tags.map(tag => (
+                <Box
+                  key={tag}
+                  px={2}
+                  py={0.5}
+                  borderRadius="full"
+                  bg="#fdf2f0"
+                  border="1px solid"
+                  borderColor={CORAL}
+                  fontSize="10px"
+                  color={CORAL}
+                  lineHeight="1.4"
+                >
+                  {tag}
+                </Box>
+              ))}
+            </HStack>
+          )}
         </Box>
 
         {file.password_protected && (
