@@ -9,9 +9,9 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'files')]
-#[ORM\Index(columns: ['token'])]
 #[ORM\Index(columns: ['expires_at'])]
 #[ORM\Index(columns: ['user_id'])]
+#[ORM\Check(constraint: 'size > 0 AND size <= 1073741824')]
 class File
 {
     #[ORM\Id]
@@ -28,7 +28,7 @@ class File
     #[ORM\Column(length: 100)]
     private string $mimeType;
 
-    #[ORM\Column]
+    #[ORM\Column(type: Types::BIGINT)]
     private int $size;
 
     #[ORM\Column(length: 36, unique: true)]

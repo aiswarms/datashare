@@ -180,7 +180,7 @@ tags   ( id PK, name, #file_id FK → files(id) ON DELETE CASCADE )
 | `original_name` | VARCHAR(255) | NOT NULL |
 | `storage_path` | VARCHAR(500) | NOT NULL |
 | `mime_type` | VARCHAR(100) | NOT NULL |
-| `size` | BIGINT | NOT NULL, ≤ 1 073 741 824 |
+| `size` | BIGINT | NOT NULL, CHECK (size > 0 AND size ≤ 1 073 741 824) |
 | `token` | VARCHAR(36) | NOT NULL, UNIQUE (UUID v4) |
 | `password_hash` | VARCHAR(255) | NULL |
 | `expires_at` | TIMESTAMP | NOT NULL |
@@ -301,7 +301,7 @@ Toutes les entrées sont validées **côté serveur** (Symfony Validator) et **c
 | Email valide et unique | Symfony `Assert\Email` + contrainte DB UNIQUE |
 | Mot de passe utilisateur ≥ 8 chars | `Assert\Length(min: 8)` |
 | Mot de passe fichier ≥ 6 chars | Vérification manuelle + UI |
-| Taille fichier ≤ 1 Go | Nginx `client_max_body_size 1g` + contrôle PHP |
+| Taille fichier ≤ 1 Go | Nginx `client_max_body_size 1g` + contrôle PHP + CHECK constraint DB |
 | Extensions interdites | Blacklist côté serveur : `exe, bat, cmd, dll, vbs, ps1...` |
 | Tags ≤ 30 chars | `Assert\Length` + contrainte DB `VARCHAR(30)` |
 | Expiration 1–7 jours | Contrôle numérique PHP |
