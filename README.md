@@ -156,6 +156,17 @@ datashare/
 
 ---
 
+## Plan de suivi de qualité et maintenance
+
+| Document | Contenu |
+|----------|---------|
+| [TESTING.md](TESTING.md) | Plan de tests par US, résultats PHPUnit (85 tests) et Vitest (167 cas), couverture frontend, 26 scénarios Cypress |
+| [SECURITY.md](SECURITY.md) | Scan de sécurité (`npm audit`, `trivy`), règles d'authentification, validation des entrées, recommandations production |
+| [PERF.md](PERF.md) | Tests de charge k6, métriques Lighthouse, budget bundle, analyse des goulots d'étranglement |
+| [MAINTENANCE.md](MAINTENANCE.md) | Mises à jour des dépendances, rotation des secrets JWT, sauvegardes, surveillance, procédure de déploiement |
+
+---
+
 ## Licence
 
 MIT
