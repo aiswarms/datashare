@@ -135,10 +135,10 @@ brew install minio/stable/mc
 mc alias set local http://localhost:9000 datashare datashare
 
 # Sauvegarde du bucket
-mc mirror local/uploads /backups/minio/$(date +%Y%m%d)/
+mc mirror local/datashare /backups/minio/$(date +%Y%m%d)/
 
 # Restauration
-mc mirror /backups/minio/20260614/ local/uploads
+mc mirror /backups/minio/20260614/ local/datashare
 ```
 
 **Fr��quence recommandée** : quotidienne, synchronisée avec la sauvegarde BDD.
@@ -218,10 +218,11 @@ docker compose restart api frontend nginx
 | `APP_SECRET` | Secret Symfony | `.env.local` |
 | `DATABASE_URL` | URL PostgreSQL | `.env.local` |
 | `JWT_PASSPHRASE` | Passphrase clé JWT | Secret manager / CI |
-| `AWS_ACCESS_KEY_ID` | ID accès MinIO | `.env.local` |
-| `AWS_SECRET_ACCESS_KEY` | Clé secrète MinIO | Secret manager / CI |
-| `AWS_ENDPOINT` | URL MinIO | `.env.local` |
-| `AWS_BUCKET` | Nom du bucket | `.env.local` |
+| `S3_ENDPOINT` | URL MinIO / S3 | `.env.local` |
+| `S3_ACCESS_KEY` | Clé d'accès MinIO / S3 | `.env.local` |
+| `S3_SECRET_KEY` | Clé secrète MinIO / S3 | Secret manager / CI |
+| `S3_REGION` | Région S3 | `.env.local` |
+| `S3_BUCKET` | Nom du bucket | `.env.local` |
 
 ### Rollback
 

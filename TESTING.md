@@ -43,10 +43,11 @@ docker compose exec api php vendor/bin/phpunit \
 
 | Suite | Fichiers | Tests | Statut |
 |-------|----------|-------|--------|
-| Controller (intégration) | 8 | ~65 | ✅ Passing |
-| Unit/Controller | 4 | ~45 | ✅ Passing |
-| Command | 1 | ~8 | ✅ Passing |
-| Entity | 1 | ~3 | ✅ Passing |
+| Controller (intégration) | 8 | 53 | ✅ Passing |
+| Unit/Controller | 4 | 26 | ✅ Passing |
+| Command | 1 | 4 | ✅ Passing |
+| Entity | 1 | 4 | ✅ Passing |
+| **Total** | **14** | **85** | ✅ |
 
 > **Note couverture backend** : L'exécution de la couverture nécessite PCOV ou Xdebug activé dans le container Docker.
 > ```bash

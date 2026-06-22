@@ -90,7 +90,7 @@ echo "api/config/jwt/*.pem" >> .gitignore
 |--------|---------------|
 | Validation email | `Assert\Email` (Symfony Validator) |
 | Extensions interdites | `['exe','bat','cmd','com','pif','vbs','ps1','msi','dll','sys','scr','sh']` |
-| Taille max upload | 1 Go (validé serveur + nginx `client_max_body_size`) |
+| Taille max upload | 1 Go — Nginx `client_max_body_size 1g` + contrôle PHP + CHECK constraint DB (`size <= 1073741824`) |
 | Validation expiration | 1–7 jours (contraint côté serveur) |
 | Tags : longueur max | 30 caractères par tag |
 
