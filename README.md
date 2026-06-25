@@ -18,51 +18,21 @@ Application web de partage de fichiers : upload authentifié ou anonyme, liens t
 
 ## Installation
 
-### 1. Cloner le dépôt
-
 ```bash
 git clone git@github.com:aiswarms/datashare.git
 cd datashare
+chmod +x deploy.sh
+./deploy.sh
 ```
 
-### 2. Configurer les variables d'environnement
+Le script `deploy.sh` gère tout : détection première installation / mise à jour, collecte des secrets, migrations, build frontend, et smoke test final.
 
-```bash
-cp api/.env api/.env.local
-```
+- **Première installation** : seuls `JWT_PASSPHRASE` et `S3_SECRET_KEY` sont demandés (saisie masquée). Toutes les autres variables ont une valeur par défaut fonctionnelle pour Docker local.
+- **Mise à jour** : aucune saisie requise si `api/.env.local` existe déjà.
 
-Éditer `api/.env.local` avec vos valeurs :
+> Pour une utilisation en CI/CD, injectez les secrets via des variables d'environnement avant d'appeler le script. Voir [MAINTENANCE.md](MAINTENANCE.md#6-procédure-de-déploiement) pour le détail complet.
 
-| Variable | Description | Valeur par défaut (dev) |
-|----------|-------------|------------------------|
-| `APP_SECRET` | Secret Symfony (32 chars min) | *(à définir)* |
-| `DATABASE_URL` | URL de connexion PostgreSQL | `postgresql://datashare:datashare@db:5432/datashare?serverVersion=16` |
-| `JWT_PASSPHRASE` | Passphrase de la clé privée JWT | `changeme` |
-| `S3_ENDPOINT` | URL MinIO / S3 | `http://minio:9000` |
-| `S3_ACCESS_KEY` | Clé d'accès S3 | `datashare` |
-| `S3_SECRET_KEY` | Clé secrète S3 | `datashare` |
-| `S3_REGION` | Région S3 | `us-east-1` |
-| `S3_BUCKET` | Nom du bucket | `datashare` |
-
-> En développement, les valeurs par défaut du `docker-compose.yml` sont fonctionnelles sans modification.
-
-### 3. Démarrer la stack
-
-```bash
-docker compose up -d
-```
-
-L'API attend automatiquement que PostgreSQL soit prêt, puis exécute les migrations. Aucune action manuelle requise.
-
-### 4. Générer les clés JWT
-
-Au premier démarrage (si les clés n'existent pas encore) :
-
-```bash
-docker compose exec api php bin/console lexik:jwt:generate-keypair
-```
-
-### 5. Accéder à l'application
+### Accéder à l'application
 
 | Service | URL |
 |---------|-----|
@@ -145,6 +115,7 @@ datashare/
 │   └── cypress/      # Tests E2E (26 scénarios)
 ├── nginx/            # Configuration reverse proxy
 ├── perf/             # Scripts k6
+├── deploy.sh         # Script de déploiement (première install + mise à jour)
 ├── docker-compose.yml
 ├── DOC_TECHNIQUE.md  # Documentation technique complète
 ├── API_CONTRACT.md   # Référence de l'API REST

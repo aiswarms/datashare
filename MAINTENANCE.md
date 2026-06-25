@@ -181,56 +181,70 @@ curl -f http://localhost/api/health
 
 ## 6. Procédure de déploiement
 
-### Environnement local (développement)
+Le script `deploy.sh` à la racine du projet automatise l'intégralité du déploiement.
+Il détecte automatiquement si c'est une première installation ou une mise à jour.
 
 ```bash
-# Première installation
-git clone <repo>
-cd datashare
-cp api/.env api/.env.local   # adapter les variables
-
-docker compose up -d
-docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction
+chmod +x deploy.sh
+./deploy.sh
 ```
 
-### Mise à jour (patch/minor)
+### Première installation
+
+Si `api/.env.local` est absent, le script entre en mode **première installation** :
+
+1. `APP_SECRET` est généré automatiquement (`openssl rand -hex 32`).
+2. Les variables avec une valeur par défaut locale (DATABASE_URL, S3_ENDPOINT, etc.) sont appliquées silencieusement.
+3. Seuls `JWT_PASSPHRASE` et `S3_SECRET_KEY` sont demandés interactivement (saisie masquée).
+4. `api/.env.local` est écrit par le script — aucune édition manuelle requise.
+
+### Mise à jour
+
+Si `api/.env.local` existe déjà, aucune question n'est posée. Le script enchaîne :
+
+1. `git pull origin main`
+2. `docker compose up -d --build`
+3. Attente PostgreSQL (`pg_isready`)
+4. `composer install --no-dev`
+5. Migrations Doctrine
+6. Génération des clés JWT si absentes
+7. `cache:clear --env=prod`
+8. `npm ci` + `npm run build`
+9. `docker compose restart api frontend nginx`
+10. Smoke test sur `GET /api/health`
+
+Le script s'arrête immédiatement (`set -e`) à la première erreur.
+
+### Utilisation en CI/CD
+
+Les secrets peuvent être injectés via des variables d'environnement avant d'appeler le script — aucun prompt ne sera affiché :
 
 ```bash
-git pull origin main
-
-# Backend
-docker compose exec api composer install --no-dev --optimize-autoloader
-docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction
-docker compose exec api php bin/console cache:clear
-
-# Frontend
-docker compose exec frontend npm ci
-docker compose exec frontend npm run build
-
-# Redémarrer
-docker compose restart api frontend nginx
+export JWT_PASSPHRASE="$SECRET_JWT_PASSPHRASE"
+export S3_SECRET_KEY="$SECRET_S3_KEY"
+./deploy.sh
 ```
 
-### Variables d'environnement requises
+### Variables d'environnement
 
-| Variable | Description | Où définir |
-|----------|-------------|-----------|
-| `APP_SECRET` | Secret Symfony | `.env.local` |
-| `DATABASE_URL` | URL PostgreSQL | `.env.local` |
-| `JWT_PASSPHRASE` | Passphrase clé JWT | Secret manager / CI |
-| `S3_ENDPOINT` | URL MinIO / S3 | `.env.local` |
-| `S3_ACCESS_KEY` | Clé d'accès MinIO / S3 | `.env.local` |
-| `S3_SECRET_KEY` | Clé secrète MinIO / S3 | Secret manager / CI |
-| `S3_REGION` | Région S3 | `.env.local` |
-| `S3_BUCKET` | Nom du bucket | `.env.local` |
+| Variable | Requis | Valeur par défaut (Docker local) | Sensible |
+|----------|--------|----------------------------------|---------|
+| `APP_SECRET` | Oui | Généré automatiquement | — |
+| `DATABASE_URL` | Oui | `postgresql://datashare:datashare@db:5432/datashare` | — |
+| `JWT_PASSPHRASE` | Oui | *(prompt)* | Oui |
+| `S3_ENDPOINT` | Oui | `http://minio:9000` | — |
+| `S3_ACCESS_KEY` | Oui | `datashare` | — |
+| `S3_SECRET_KEY` | Oui | *(prompt)* | Oui |
+| `S3_REGION` | Oui | `us-east-1` | — |
+| `S3_BUCKET` | Oui | `datashare` | — |
 
 ### Rollback
 
 ```bash
-# Retourner au commit précédent
+# Rollback migration Doctrine
+docker compose exec api php bin/console doctrine:migrations:migrate prev
+
+# Ou retour au commit précédent
 git revert HEAD
 git push origin main
-
-# Ou rollback migration Doctrine
-docker compose exec api php bin/console doctrine:migrations:migrate prev
 ```
