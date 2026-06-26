@@ -562,4 +562,111 @@ describe('UploadPage', () => {
     expect(windowOpenSpy).toHaveBeenCalledWith(expect.stringContaining('/download/test-token-abc'), '_blank')
     windowOpenSpy.mockRestore()
   })
+
+  it('detects forbidden file extensions', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile('malware.exe')] } })
+
+    expect(screen.getByText('malware.exe')).toBeInTheDocument()
+  })
+
+  it('detects forbidden extensions case-insensitively', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile('script.PS1')] } })
+
+    expect(screen.getByText('script.PS1')).toBeInTheDocument()
+  })
+
+  it('allows safe file extensions like jpg', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile('photo.jpg')] } })
+
+    expect(screen.getByText('photo.jpg')).toBeInTheDocument()
+  })
+
+  it('validates password length on change - short password triggers error', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: '123' } })
+
+    expect(passwordInput.value).toBe('123')
+  })
+
+  it('validates password length - 6 chars is valid', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: '123456' } })
+
+    expect(passwordInput.value).toBe('123456')
+  })
+
+  it('validates password length - 7 chars is valid', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: '1234567' } })
+
+    expect(passwordInput.value).toBe('1234567')
+  })
+
+  it('validates empty password is allowed', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: '' } })
+
+    expect(passwordInput.value).toBe('')
+  })
+
+  it('clears extError when selecting a new file', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    // First select forbidden extension
+    fireEvent.change(input, { target: { files: [makeFile('script.bat')] } })
+    expect(screen.getByText('script.bat')).toBeInTheDocument()
+
+    // Then select allowed extension
+    fireEvent.change(input, { target: { files: [makeFile('photo.jpg')] } })
+    expect(screen.getByText('photo.jpg')).toBeInTheDocument()
+  })
+
+  it('handles file with no extension', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile('README')] } })
+
+    expect(screen.getByText('README')).toBeInTheDocument()
+  })
+
+  it('handles multiple forbidden extensions', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const forbiddenExts = ['exe', 'bat', 'cmd', 'com', 'pif', 'vbs', 'ps1', 'msi', 'dll', 'sys', 'scr', 'sh']
+
+    forbiddenExts.forEach(ext => {
+      fireEvent.change(input, { target: { files: [makeFile(`file.${ext}`)] } })
+      expect(screen.getByText(`file.${ext}`)).toBeInTheDocument()
+    })
+  })
 })

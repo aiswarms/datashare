@@ -5,6 +5,7 @@ import AppShell from '../components/AppShell'
 import { uploadFile } from '../api/files'
 
 const MAX_SIZE = 1_073_741_824
+const FORBIDDEN_EXTS = ['exe', 'bat', 'cmd', 'com', 'pif', 'vbs', 'ps1', 'msi', 'dll', 'sys', 'scr', 'sh']
 
 const EXPIRY_OPTIONS = [
   { value: 1, label: 'Une journée' },
@@ -45,6 +46,8 @@ export default function UploadPage() {
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [sizeError, setSizeError] = useState(false)
+  const [extError, setExtError] = useState(false)
+  const [passwordError, setPasswordError] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [downloadUrl, setDownloadUrl] = useState('')
@@ -57,10 +60,19 @@ export default function UploadPage() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null
     setSizeError(false)
+    setExtError(false)
     setError('')
     if (!f) return
     setFile(f)
+    const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
     setSizeError(f.size > MAX_SIZE)
+    setExtError(FORBIDDEN_EXTS.includes(ext))
+  }
+
+  function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value
+    setPassword(val)
+    setPasswordError(val.length > 0 && val.length < 6)
   }
 
   async function handleSubmit() {
@@ -243,10 +255,13 @@ export default function UploadPage() {
                   type="password"
                   placeholder="Optionnel"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   borderColor="gray.200"
                   size="sm"
                 />
+                {passwordError && (
+                  <Text fontSize="sm" color="red.500">Le mot de passe doit contenir au moins 6 caractères</Text>
+                )}
               </VStack>
 
               <VStack gap={1} align="stretch">
