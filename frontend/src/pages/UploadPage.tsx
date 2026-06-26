@@ -76,7 +76,7 @@ export default function UploadPage() {
   }
 
   async function handleSubmit() {
-    if (!file || sizeError) return
+    if (!file || sizeError || extError || passwordError) return
     setLoading(true)
     setError('')
     const pendingTag = tagInput.trim()
@@ -151,7 +151,14 @@ export default function UploadPage() {
           <input ref={inputRef} type="file" style={{ display: 'none' }} onChange={handleFileChange} />
 
           {sizeError && (
-            <Text fontSize="sm" color="red.500">La taille des fichiers est limitée à 1 Go</Text>
+            <Text fontSize="sm" color="red.500">
+              Ce fichier dépasse la limite de 1 Go. Choisissez un fichier plus petit.
+            </Text>
+          )}
+          {extError && (
+            <Text fontSize="sm" color="red.500">
+              Ce type de fichier est interdit (.exe, .bat, .sh, etc.). Choisissez un autre fichier.
+            </Text>
           )}
 
           {success ? (
@@ -256,7 +263,7 @@ export default function UploadPage() {
                   placeholder="Optionnel"
                   value={password}
                   onChange={handlePasswordChange}
-                  borderColor="gray.200"
+                  borderColor={passwordError ? 'red.400' : 'gray.200'}
                   size="sm"
                 />
                 {passwordError && (
@@ -298,7 +305,7 @@ export default function UploadPage() {
                 color="white"
                 borderRadius="full"
                 loading={loading}
-                disabled={!file || sizeError}
+                disabled={!file || sizeError || extError || passwordError}
                 _hover={{ bg: 'gray.700' }}
                 onClick={handleSubmit}
               >
