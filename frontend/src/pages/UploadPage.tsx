@@ -67,7 +67,11 @@ export default function UploadPage() {
     if (!file || sizeError) return
     setLoading(true)
     setError('')
-    const { ok, status, data } = await uploadFile(file, expiresInDays, password || undefined, tags.length ? tags : undefined)
+    const pendingTag = tagInput.trim()
+    const finalTags = pendingTag && !tags.includes(pendingTag) && pendingTag.length <= 30
+      ? [...tags, pendingTag]
+      : tags
+    const { ok, status, data } = await uploadFile(file, expiresInDays, password || undefined, finalTags.length ? finalTags : undefined)
     setLoading(false)
     if (status === 401) {
       localStorage.removeItem('token')
