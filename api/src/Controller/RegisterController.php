@@ -60,8 +60,7 @@ class RegisterController
         }
 
         $user = new User($data['email'], '');
-        $hashed = $this->hasher->hashPassword($user, $data['password']);
-        $user = new User($data['email'], $hashed);
+        $user->setPassword($this->hasher->hashPassword($user, $data['password']));
 
         $this->em->persist($user);
         $this->em->flush();

@@ -34,6 +34,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getId(): int { return $this->id; }
     public function getEmail(): string { return $this->email; }
     public function getPassword(): string { return $this->password; }
+    public function setPassword(string $password): void { $this->password = $password; }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
 
     public function getUserIdentifier(): string { return $this->email; }

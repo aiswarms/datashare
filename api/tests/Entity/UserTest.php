@@ -37,4 +37,21 @@ class UserTest extends TestCase
         $user->eraseCredentials();
         $this->assertSame('hash', $user->getPassword());
     }
+
+    public function testSetPasswordUpdatesPassword(): void
+    {
+        $user = new User('test@example.com', 'oldpassword');
+        $this->assertSame('oldpassword', $user->getPassword());
+
+        $user->setPassword('newpassword');
+        $this->assertSame('newpassword', $user->getPassword());
+    }
+
+    public function testGetIdMethodExists(): void
+    {
+        $user = new User('test@example.com', 'hash');
+        // Note: getId() returns the database-assigned id which is a GeneratedValue
+        // It's uninitialized for non-persisted entities, but we verify the method exists
+        $this->assertTrue(method_exists($user, 'getId'));
+    }
 }
