@@ -4,7 +4,7 @@
 
 | Property       | Value                              |
 |----------------|------------------------------------|
-| Base URL       | `/api/v1`                          |
+| Base URL       | `/api`                          |
 | Data format    | JSON (except file upload/download) |
 | Upload format  | `multipart/form-data`              |
 | Auth scheme    | JWT Bearer (`Authorization: Bearer <token>`) |
@@ -136,7 +136,7 @@ Upload a file as an authenticated user.
   "expires_at": "2024-06-10T10:00:00Z",
   "uploaded_at": "2024-06-03T10:00:00Z",
   "password_protected": false,
-  "download_url": "/api/v1/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download",
+  "download_url": "/api/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download",
   "tags": ["invoice", "2024"]
 }
 ```
@@ -174,7 +174,7 @@ Upload a file without an account.
   "expires_at": "2024-06-10T10:00:00Z",
   "uploaded_at": "2024-06-03T10:00:00Z",
   "password_protected": true,
-  "download_url": "/api/v1/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download"
+  "download_url": "/api/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download"
 }
 ```
 
@@ -254,7 +254,7 @@ Get the authenticated user's upload history.
       "uploaded_at": "2024-06-03T10:00:00Z",
       "is_expired": false,
       "password_protected": false,
-      "download_url": "/api/v1/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download",
+      "download_url": "/api/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download",
       "tags": ["invoice", "2024"]
     }
   ]

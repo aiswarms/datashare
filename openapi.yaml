@@ -8,7 +8,7 @@ info:
     password-protected download links.
 
 servers:
-  - url: /api/v1
+  - url: /api
 
 components:
   securitySchemes:
@@ -96,7 +96,7 @@ components:
           example: false
         download_url:
           type: string
-          example: /api/v1/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download
+          example: /api/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download
         tags:
           type: array
           items:
@@ -141,7 +141,7 @@ components:
           example: true
         download_url:
           type: string
-          example: /api/v1/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download
+          example: /api/files/a1b2c3d4-e5f6-7890-abcd-ef1234567890/download
 
     FileMetadata:
       type: object
