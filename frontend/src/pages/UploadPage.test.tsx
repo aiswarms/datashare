@@ -61,7 +61,7 @@ describe('UploadPage', () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, { target: { files: [makeFile('huge.iso', 1_073_741_825)] } })
 
-    expect(screen.getByText('La taille des fichiers est limitée à 1 Go')).toBeInTheDocument()
+    expect(screen.getByText('Ce fichier dépasse la limite de 1 Go. Choisissez un fichier plus petit.')).toBeInTheDocument()
   })
 
   it('disables submit when no file selected', () => {
@@ -128,11 +128,11 @@ describe('UploadPage', () => {
     // First create a size error
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, { target: { files: [makeFile('huge.iso', 1_073_741_825)] } })
-    expect(screen.getByText('La taille des fichiers est limitée à 1 Go')).toBeInTheDocument()
+    expect(screen.getByText('Ce fichier dépasse la limite de 1 Go. Choisissez un fichier plus petit.')).toBeInTheDocument()
 
     // Select a valid file to clear error
     fireEvent.change(input, { target: { files: [makeFile('valid.pdf', 1024)] } })
-    expect(screen.queryByText('La taille des fichiers est limitée à 1 Go')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ce fichier dépasse la limite de 1 Go. Choisissez un fichier plus petit.')).not.toBeInTheDocument()
   })
 
   it('does not set file when no file is selected in input', () => {
@@ -563,14 +563,24 @@ describe('UploadPage', () => {
     windowOpenSpy.mockRestore()
   })
 
-  it('detects forbidden file extensions', () => {
+  it('shows error message when forbidden extension is selected', () => {
     localStorage.setItem('token', 'jwt')
     renderWithProviders(<UploadPage />)
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, { target: { files: [makeFile('malware.exe')] } })
 
-    expect(screen.getByText('malware.exe')).toBeInTheDocument()
+    expect(screen.getByText('Ce type de fichier est interdit (.exe, .bat, .sh, etc.). Choisissez un autre fichier.')).toBeInTheDocument()
+  })
+
+  it('disables submit button when forbidden extension is selected', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile('malware.exe')] } })
+
+    expect(screen.getByRole('button', { name: 'Téléverser' })).toBeDisabled()
   })
 
   it('detects forbidden extensions case-insensitively', () => {
@@ -580,84 +590,35 @@ describe('UploadPage', () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, { target: { files: [makeFile('script.PS1')] } })
 
-    expect(screen.getByText('script.PS1')).toBeInTheDocument()
+    expect(screen.getByText('Ce type de fichier est interdit (.exe, .bat, .sh, etc.). Choisissez un autre fichier.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Téléverser' })).toBeDisabled()
   })
 
-  it('allows safe file extensions like jpg', () => {
+  it('clears extension error when selecting a safe file', () => {
     localStorage.setItem('token', 'jwt')
     renderWithProviders(<UploadPage />)
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(input, { target: { files: [makeFile('photo.jpg')] } })
-
-    expect(screen.getByText('photo.jpg')).toBeInTheDocument()
-  })
-
-  it('validates password length on change - short password triggers error', () => {
-    localStorage.setItem('token', 'jwt')
-    renderWithProviders(<UploadPage />)
-
-    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
-    fireEvent.change(passwordInput, { target: { value: '123' } })
-
-    expect(passwordInput.value).toBe('123')
-  })
-
-  it('validates password length - 6 chars is valid', () => {
-    localStorage.setItem('token', 'jwt')
-    renderWithProviders(<UploadPage />)
-
-    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
-    fireEvent.change(passwordInput, { target: { value: '123456' } })
-
-    expect(passwordInput.value).toBe('123456')
-  })
-
-  it('validates password length - 7 chars is valid', () => {
-    localStorage.setItem('token', 'jwt')
-    renderWithProviders(<UploadPage />)
-
-    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
-    fireEvent.change(passwordInput, { target: { value: '1234567' } })
-
-    expect(passwordInput.value).toBe('1234567')
-  })
-
-  it('validates empty password is allowed', () => {
-    localStorage.setItem('token', 'jwt')
-    renderWithProviders(<UploadPage />)
-
-    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
-    fireEvent.change(passwordInput, { target: { value: '' } })
-
-    expect(passwordInput.value).toBe('')
-  })
-
-  it('clears extError when selecting a new file', () => {
-    localStorage.setItem('token', 'jwt')
-    renderWithProviders(<UploadPage />)
-
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    // First select forbidden extension
     fireEvent.change(input, { target: { files: [makeFile('script.bat')] } })
-    expect(screen.getByText('script.bat')).toBeInTheDocument()
+    expect(screen.getByText('Ce type de fichier est interdit (.exe, .bat, .sh, etc.). Choisissez un autre fichier.')).toBeInTheDocument()
 
-    // Then select allowed extension
     fireEvent.change(input, { target: { files: [makeFile('photo.jpg')] } })
-    expect(screen.getByText('photo.jpg')).toBeInTheDocument()
+    expect(screen.queryByText('Ce type de fichier est interdit (.exe, .bat, .sh, etc.). Choisissez un autre fichier.')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Téléverser' })).not.toBeDisabled()
   })
 
-  it('handles file with no extension', () => {
+  it('allows safe file extensions without error', () => {
     localStorage.setItem('token', 'jwt')
     renderWithProviders(<UploadPage />)
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(input, { target: { files: [makeFile('README')] } })
+    fireEvent.change(input, { target: { files: [makeFile('photo.jpg')] } })
 
-    expect(screen.getByText('README')).toBeInTheDocument()
+    expect(screen.queryByText(/Ce type de fichier est interdit/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Téléverser' })).not.toBeDisabled()
   })
 
-  it('handles multiple forbidden extensions', () => {
+  it('blocks all forbidden extensions', () => {
     localStorage.setItem('token', 'jwt')
     renderWithProviders(<UploadPage />)
 
@@ -666,7 +627,94 @@ describe('UploadPage', () => {
 
     forbiddenExts.forEach(ext => {
       fireEvent.change(input, { target: { files: [makeFile(`file.${ext}`)] } })
-      expect(screen.getByText(`file.${ext}`)).toBeInTheDocument()
+      expect(screen.getByText('Ce type de fichier est interdit (.exe, .bat, .sh, etc.). Choisissez un autre fichier.')).toBeInTheDocument()
     })
+  })
+
+  it('handles file with no extension without error', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile('README')] } })
+
+    expect(screen.queryByText(/Ce type de fichier est interdit/)).not.toBeInTheDocument()
+  })
+
+  it('shows error when password is shorter than 6 characters', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: '12345' } })
+
+    expect(screen.getByText('Le mot de passe doit contenir au moins 6 caractères')).toBeInTheDocument()
+  })
+
+  it('disables submit when password is shorter than 6 characters', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile()] } })
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: 'abc' } })
+
+    expect(screen.getByRole('button', { name: 'Téléverser' })).toBeDisabled()
+  })
+
+  it('shows no password error when password has exactly 6 characters', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: '123456' } })
+
+    expect(screen.queryByText('Le mot de passe doit contenir au moins 6 caractères')).not.toBeInTheDocument()
+  })
+
+  it('shows no password error when password is empty', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: '' } })
+
+    expect(screen.queryByText('Le mot de passe doit contenir au moins 6 caractères')).not.toBeInTheDocument()
+  })
+
+  it('clears password error when password reaches 6 characters', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const passwordInput = screen.getByPlaceholderText('Optionnel') as HTMLInputElement
+    fireEvent.change(passwordInput, { target: { value: 'abc' } })
+    expect(screen.getByText('Le mot de passe doit contenir au moins 6 caractères')).toBeInTheDocument()
+
+    fireEvent.change(passwordInput, { target: { value: 'abcdef' } })
+    expect(screen.queryByText('Le mot de passe doit contenir au moins 6 caractères')).not.toBeInTheDocument()
+  })
+
+  it('does not show size error for a file of exactly 1 GB', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile('max.iso', 1_073_741_824)] } })
+
+    expect(screen.queryByText(/dépasse la limite/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Téléverser' })).not.toBeDisabled()
+  })
+
+  it('shows size error for a file of 1 GB + 1 byte', () => {
+    localStorage.setItem('token', 'jwt')
+    renderWithProviders(<UploadPage />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [makeFile('huge.iso', 1_073_741_825)] } })
+
+    expect(screen.getByText('Ce fichier dépasse la limite de 1 Go. Choisissez un fichier plus petit.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Téléverser' })).toBeDisabled()
   })
 })
